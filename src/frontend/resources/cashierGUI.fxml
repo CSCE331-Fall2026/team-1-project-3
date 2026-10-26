@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox alignment="CENTER" prefHeight="520.0" prefWidth="695.0" stylesheets="frontend/resources/cashierStyle.css" xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1" fx:controller="frontend.controllers.CashierController" styleClass="parent">
+   <children>
+      <Button fx:id="changeView" mnemonicParsing="false" onAction="#changeView" text="Change View" styleClass="outerButton" />
+      <HBox alignment="CENTER" prefHeight="461.0" prefWidth="803.0" VBox.vgrow="ALWAYS">
+         <children>
+            <ScrollPane fitToWidth="true" prefHeight="200.0" prefWidth="50.0" HBox.hgrow="ALWAYS">
+               <content> 
+                  <VBox fx:id="sizeBox" prefHeight="100" prefWidth="400" alignment="TOP_CENTER">
+                     <children>
+                        <Label text="Size" />
+                        <Button fx:id="bowl" prefHeight="30" prefWidth="150" mnemonicParsing="false" text="Bowl" />
+                        <Button fx:id="plate" prefHeight="30" prefWidth="150" mnemonicParsing="false" text="Plate" />
+                        <Button fx:id="biggerPlate" prefHeight="30" prefWidth="150" mnemonicParsing="false" text="Bigger Plate" />
+                     </children></VBox>
+               </content>
+            </ScrollPane>
+            <ScrollPane fitToWidth="true" prefHeight="200.0" prefWidth="150.0" HBox.hgrow="ALWAYS">
+               <content>
+                  <VBox fx:id="mainBox" prefHeight="461.0" prefWidth="400.0" alignment="TOP_CENTER"/>
+               </content>
+            </ScrollPane>
+            <ScrollPane fitToWidth="true" prefHeight="200.0" prefWidth="150.0" HBox.hgrow="ALWAYS">
+               <content>
+                  <VBox fx:id="sideBox" prefHeight="461.0" prefWidth="400.0" alignment="TOP_CENTER"/>
+               </content>
+            </ScrollPane>
+            <ScrollPane fitToWidth="true" prefHeight="200.0" prefWidth="150.0" HBox.hgrow="ALWAYS">
+               <content>
+                  <VBox fx:id="drinkBox" prefHeight="461.0" prefWidth="400.0" alignment="TOP_CENTER"/>
+               </content>
+            </ScrollPane>
+            <VBox prefWidth="300.0" minWidth="300.0" alignment="CENTER" spacing="5.0">
+               <children>
+                  <ScrollPane fitToWidth="true" VBox.vgrow="ALWAYS">
+                     <content>
+                        <VBox fx:id="cartBox" alignment="TOP_LEFT"/>
+                     </content>
+                  </ScrollPane>
+                  <Button fx:id="checkout" mnemonicParsing="false" prefHeight="25.0" prefWidth="152.0" text="Checkout" styleClass="outerButton" />
+               </children>
+            </VBox>
+         </children>
+      </HBox>
+      <Button fx:id="closeButton" mnemonicParsing="false" text="Close" styleClass="outerButton" />
+   </children>
+</VBox>

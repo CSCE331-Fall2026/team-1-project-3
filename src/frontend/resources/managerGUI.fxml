@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.chart.BarChart?>
+<?import javafx.scene.chart.CategoryAxis?>
+<?import javafx.scene.chart.LineChart?>
+<?import javafx.scene.chart.NumberAxis?>
+<?import javafx.scene.control.Accordion?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ListView?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.Tab?>
+<?import javafx.scene.control.TabPane?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox alignment="TOP_LEFT" prefHeight="800.0" prefWidth="1200.0" stylesheets="frontend/resources/managerStyle.css" xmlns="http://javafx.com/javafx/25" xmlns:fx="http://javafx.com/fxml/1" fx:controller="frontend.controllers.ManagerController">
+<HBox alignment="TOP_LEFT" prefHeight="800.0" prefWidth="1200.0" VBox.vgrow="ALWAYS">
+<TabPane tabClosingPolicy="UNAVAILABLE" HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS">
+  <tabs>
+    <!-- Menu Tab -->
+    <Tab text="Menu Items"><content>
+      <AnchorPane styleClass="genericStyle" HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS">
+        <children>
+          <Button fx:id="changeViewButton4" layoutX="14.0" layoutY="14.0" mnemonicParsing="false" onAction="#changeView" styleClass="genericStyle" text="Change View" />
+          <Button fx:id="closeButton4" layoutX="124.0" layoutY="14.0" mnemonicParsing="false" onAction="#closeWindow" styleClass="genericStyle" text="Close App" />
+          <Button fx:id="addItem" layoutX="212.0" layoutY="14.0" mnemonicParsing="false" onAction="#addMenuItem" styleClass="genericStyle" text="Add Menu Item" />
+            <ListView fx:id="menuListView" layoutX="14.0" layoutY="49.0" HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS">
+              <AnchorPane.topAnchor>63.0</AnchorPane.topAnchor>
+              <AnchorPane.leftAnchor>14.0</AnchorPane.leftAnchor>
+              <AnchorPane.rightAnchor>14.0</AnchorPane.rightAnchor>
+              <AnchorPane.bottomAnchor>14.0</AnchorPane.bottomAnchor>
+            </ListView>
+        </children>
+      </AnchorPane> 
+    </content></Tab>
+
+
+    <!-- Stock Tab -->
+    <Tab text="Ingredient Stock"><content>
+      <AnchorPane styleClass="genericStyle" HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS">
+        <children>
+          <Button fx:id="changeViewButton2" layoutX="14.0" layoutY="14.0" mnemonicParsing="false" onAction="#changeView" styleClass="genericStyle" text="Change View" />
+          <Button fx:id="closeButton2" layoutX="124.0" layoutY="14.0" mnemonicParsing="false" onAction="#closeWindow" styleClass="genericStyle" text="Close App" />
+            <ListView fx:id="stockListView" layoutX="212.0" layoutY="49.0" HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS">
+              <AnchorPane.topAnchor>63.0</AnchorPane.topAnchor>
+              <AnchorPane.leftAnchor>14.0</AnchorPane.leftAnchor>
+              <AnchorPane.rightAnchor>14.0</AnchorPane.rightAnchor>
+              <AnchorPane.bottomAnchor>14.0</AnchorPane.bottomAnchor>
+            </ListView>
+        </children>
+      </AnchorPane> 
+    </content></Tab>
+
+    <!-- Product Usage Chart (Bar Graph) -->
+    <Tab text="Product Usage"><content>
+      <AnchorPane styleClass="genericStyle" HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS">
+        <children>
+          <Button fx:id="changeViewButton4" layoutX="14.0" layoutY="14.0" mnemonicParsing="false" onAction="#changeView" styleClass="genericStyle" text="Change View" />
+          <Button fx:id="closeButton4" layoutX="124.0" layoutY="14.0" mnemonicParsing="false" onAction="#closeWindow" styleClass="genericStyle" text="Close App" />
+          <Button fx:id="changeTimePeriodButton1" layoutX="212.0" layoutY="14.0" mnemonicParsing="false" onAction="#changeStockTimePeriod" styleClass="genericStyle" text="Change Time Period" />
+          <BarChart fx:id="stockGraph" layoutX="14.0" layoutY="43.0" legendVisible="false" prefHeight="314.0" prefWidth="573.0" title="Products Used in Whole Time Period">
+            <xAxis>
+              <NumberAxis label="Product Used" tickLabelRotation="0.01" />
+            </xAxis>
+            <yAxis>
+              <CategoryAxis label="Item Name" side="LEFT" />
+            </yAxis>
+            <AnchorPane.topAnchor>57.0</AnchorPane.topAnchor>
+            <AnchorPane.leftAnchor>14.0</AnchorPane.leftAnchor>
+            <AnchorPane.rightAnchor>14.0</AnchorPane.rightAnchor>
+            <AnchorPane.bottomAnchor>14.0</AnchorPane.bottomAnchor>
+          </BarChart>
+        </children>
+      </AnchorPane>
+    </content></Tab>
+
+    <!-- Order History (Receipts) Tab -->
+      <Tab text="Order History"><content>
+        <AnchorPane styleClass="genericStyle" HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS">
+          <children>
+            <Button fx:id="changeViewButton3" layoutX="14.0" layoutY="14.0" mnemonicParsing="false" onAction="#changeView" styleClass="genericStyle" text="Change View" />
+            <Button fx:id="closeButton3" layoutX="124.0" layoutY="14.0" mnemonicParsing="false" onAction="#closeWindow" styleClass="genericStyle" text="Close App" />
+                  <ScrollPane fitToHeight="true" fitToWidth="true" AnchorPane.bottomAnchor="14.0" AnchorPane.leftAnchor="14.0" AnchorPane.rightAnchor="14.0" AnchorPane.topAnchor="60.0">
+                    <content>
+                      <VBox fillWidth="true">
+                        <children>
+                          <Accordion fx:id="receiptAccordion" VBox.vgrow="ALWAYS" />
+                        </children>
+                      </VBox>
+                    </content>
+                  </ScrollPane>
+          </children>
+        </AnchorPane>
+      </content></Tab>
+
+    <!-- Item Sold Tab (Bar Graph) -->
+    <Tab text="Items Sold"><content>
+      <AnchorPane styleClass="genericStyle" HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS">
+        <children>
+          <Button fx:id="changeViewButton1" layoutX="14.0" layoutY="14.0" mnemonicParsing="false" onAction="#changeView" styleClass="genericStyle" text="Change View" />
+          <Button fx:id="closeButton1" layoutX="124.0" layoutY="14.0" mnemonicParsing="false" onAction="#closeWindow" styleClass="genericStyle" text="Close App" />
+          <Button fx:id="changeTimePeriodButton" layoutX="212.0" layoutY="14.0" mnemonicParsing="false" onAction="#changeSoldTimePeriod" styleClass="genericStyle" text="Change Time Period" />
+          <BarChart fx:id="salesGraph" layoutX="14.0" layoutY="43.0" legendVisible="false" prefHeight="314.0" prefWidth="573.0" title="Items Sold in Whole Time Period">
+            <xAxis>
+              <NumberAxis label="Number Sold" tickLabelRotation="0.01" />
+            </xAxis>
+            <yAxis>
+              <CategoryAxis label="Item Name" side="LEFT" />
+            </yAxis>
+            <AnchorPane.topAnchor>57.0</AnchorPane.topAnchor>
+            <AnchorPane.leftAnchor>14.0</AnchorPane.leftAnchor>
+            <AnchorPane.rightAnchor>14.0</AnchorPane.rightAnchor>
+            <AnchorPane.bottomAnchor>14.0</AnchorPane.bottomAnchor>
+          </BarChart>
+        </children>
+      </AnchorPane>
+    </content></Tab>
+
+    <!-- X Report (Bar Graph) -->
+    <Tab text="X Report"><content>
+      <AnchorPane styleClass="genericStyle" HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS">
+        <children>
+          <Button fx:id="changeViewButton5" layoutX="14.0" layoutY="14.0" mnemonicParsing="false" onAction="#changeView" styleClass="genericStyle" text="Change View" />
+          <Button fx:id="closeButton5" layoutX="124.0" layoutY="14.0" mnemonicParsing="false" onAction="#closeWindow" styleClass="genericStyle" text="Close App" />
+          <LineChart layoutX="14.0" layoutY="43.0" legendVisible="false" prefHeight="314.0" prefWidth="573.0" title="Sales Per Hour" fx:id="xReportGraph">
+            <xAxis>
+              <CategoryAxis label="Hour of Operation" />
+            </xAxis>
+            <yAxis>
+              <NumberAxis label="Number of Sales" prefWidth="100.0" />
+            </yAxis>
+            <AnchorPane.topAnchor>57.0</AnchorPane.topAnchor>
+            <AnchorPane.leftAnchor>14.0</AnchorPane.leftAnchor>
+            <AnchorPane.rightAnchor>14.0</AnchorPane.rightAnchor>
+            <AnchorPane.bottomAnchor>14.0</AnchorPane.bottomAnchor>
+          </LineChart>
+        </children>
+      </AnchorPane>
+    </content></Tab>
+
+  </tabs>
+</TabPane>
+</HBox>
+</VBox>

@@ -1,0 +1,17 @@
+*.class
+.nvimlog
+out/
+javafx-sdk-25.0.4/
+.vscode/
+.env
+.env.*
+!.env.example
+set-env.sh
+
+# Generated SQL data
+src/sql-scripts/sql/Script.sql
+src/sql-scripts/sql/Reset.sql
+
+# C++ build artifacts
+src/sql-scripts/generator/generate
+src/sql-scripts/generator/*.o
