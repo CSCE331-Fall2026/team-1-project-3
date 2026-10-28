@@ -4,7 +4,7 @@ A publicly hosted web application for Panda Express that allows customers to ord
 
 ## Live Links
 - **Deployed app:** http://localhost:3000/
-- **Documentation:** https://csce-331-project-2.pages.dev/package-summary
+- **Documentation:** https://team-1-project-3.ivin-98.workers.dev/
 - **Project board (backlog + burn-up):** https://github.com/orgs/CSCE331-Fall2026/projects/6/views/1
 
 ## Roles
