@@ -1,0 +1,7 @@
+backend.config
+backend.database
+backend.models
+frontend.app
+frontend.components
+frontend.controllers
+frontend.models
