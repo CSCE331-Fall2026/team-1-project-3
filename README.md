@@ -3,9 +3,9 @@
 A publicly hosted web application for Panda Express that allows customers to order from the menu, kitchen staff to see live inventory, servers to efficiently record and view customer orders, and managers to view reports.
 
 ## Live Links
-- **Deployed app:** <URL or "TBD">
-- **Documentation:** <Cloudflare URL or "TBD">
-- **Project board (backlog + burn-up):** <GitHub Projects URL>
+- **Deployed app:** http://localhost:3000/
+- **Documentation:** https://csce-331-project-2.pages.dev/package-summary
+- **Project board (backlog + burn-up):** https://github.com/orgs/CSCE331-Fall2026/projects/6/views/1
 
 ## Roles
 | Team Member    | Role                           |
@@ -21,10 +21,10 @@ A publicly hosted web application for Panda Express that allows customers to ord
 **Motivation**: Sometimes customers may not know what to order, a recommendation could assist them, for the customer side of things. On the other hand, for ingredient stocking recommendations, managers may lose money by buying too much of ingredients that aren’t used, or not enough of ingredients in high demand, so reports telling them what to stock more/less can be beneficial to optimizing profits. [1]
 
 ## Tech Stack
-- **Front-end:**
+- **Front-end:** React
 - **Back-end:** Java/JDBC
 - **Database:** PostgreSQL on AWS
-- **Hosting service:**
-- **Authentication:**
+- **Hosting service:** Cloudfare
+- **Authentication:** Google Authenticator
 
 
