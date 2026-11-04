@@ -17,6 +17,19 @@ public class ApiErrors {
 
     @ExceptionHandler({ SQLException.class, ClassNotFoundException.class })
     public ResponseEntity<Map<String, String>> database(Exception e) {
+        if (e instanceof SQLException s) {
+            String state = s.getSQLState();
+            // 22007 invalid_datetime_format, 22008 datetime_field_overflow: a bad start/end on the chart endpoints.
+            if ("22007".equals(state) || "22008".equals(state)) {
+                log.warn("Rejected date input: {}", s.getMessage());
+                return ResponseEntity.badRequest().body(Map.of("error", "Invalid date or time"));
+            }
+            // 23505 unique_violation: today only addMenuItem can reach here with it (checkout catches its own).
+            if ("23505".equals(state)) {
+                log.warn("Rejected duplicate key: {}", s.getMessage());
+                return ResponseEntity.status(409).body(Map.of("error", "That ID already exists"));
+            }
+        }
         log.error("Database request failed", e);
         return ResponseEntity.status(500).body(Map.of("error", "Database request failed"));
     }
