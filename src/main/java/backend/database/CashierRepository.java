@@ -98,7 +98,7 @@ public final class CashierRepository {
                         ingredients.setInt(1, itemId);
                         try (ResultSet results = ingredients.executeQuery()) {
                             while (results.next()) {
-                                requiredInventory.merge(results.getInt("inventory_id"), entry.getValue(), Integer::sum);
+                                requiredInventory.merge(results.getInt("inventory_id"), entry.getValue(), Math::addExact);
                                 mappedIngredientCount++;
                             }
                         }

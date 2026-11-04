@@ -41,13 +41,12 @@ A publicly hosted web application for Panda Express that allows customers to ord
    export DB_USER=...
    export DB_PASSWORD=...
    ```
-2. Start the API (http://localhost:3001):
+2. Run the whole app (API + site) at http://localhost:3001. This also builds the React client:
    ```bash
    source set-env.sh && ./mvnw spring-boot:run
    ```
-3. In a second terminal, start the React dev server (http://localhost:5173, hot reload; `/api` is proxied to :3001):
-   ```bash
-   cd client && npm run dev
-   ```
 
-Step 2 also builds the client and serves it at http://localhost:3001, so step 3 is only needed when working on the UI.
+**Optional, for UI work:** while step 2 is running, start the React dev server in a second terminal for hot reload at http://localhost:5173 (`/api` is proxied to :3001):
+```bash
+cd client && npm run dev
+```
