@@ -1,32 +1,10 @@
 # Sprint 1 Meetings
 
 ## Meeting 1
-
-### Sharaf M
-**Did yesterday**:
-**Going to do today**:
-**Blockers**:
-
-### Ashley H
-**Did yesterday**:
-**Going to do today**:
-**Blockers**:
-
-### Colby I
-**Did yesterday**:
-**Going to do today**:
-**Blockers**:
-
-### Pablo A
-**Did yesterday**:
-**Going to do today**:
-**Blockers**:
-
-### Samuel J
-**Did yesterday**:
-**Going to do today**:
-**Blockers**:
-
+11/4/26
+**Last Time:** Worked on react, testing front end code, fixed a few bugs with the receipt, and getting the new front end working on all our computers.
+**This Time:** Starting on Customer View, continuing the testing for the api, and adding features to menu items.
+**Blocker:** Still understanding the new react frontend, which is creating some slow downs in progress.
 
 
 ## Retrospective

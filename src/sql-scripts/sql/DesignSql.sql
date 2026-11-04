@@ -136,6 +136,7 @@ CREATE TABLE receipt (
     location_id INTEGER,
     user_id INTEGER,
     receipt_timestamp TIMESTAMP NOT NULL,
+    customer VARCHAR(64),
 
     CONSTRAINT fk_receipt_location
         FOREIGN KEY (location_id)

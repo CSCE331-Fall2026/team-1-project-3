@@ -7,6 +7,8 @@ javafx-sdk-25.0.4/
 .env.*
 !.env.example
 set-env.sh
+client/
+target/
 
 # Generated SQL data
 src/sql-scripts/sql/Script.sql
