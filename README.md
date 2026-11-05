@@ -3,7 +3,9 @@
 A publicly hosted web application for Panda Express that allows customers to order from the menu, kitchen staff to see live inventory, servers to efficiently record and view customer orders, and managers to view reports.
 
 ## Live Links
-- **Deployed app:** http://localhost:3000/
+
+- **Live Deployed app:** https://team-1-project-3-y3pm.onrender.com/
+- **Local Deployed app:** http://localhost:3000/
 - **Documentation:** https://team-1-project-3.ivin-98.workers.dev/
 - **Project board (backlog + burn-up):** https://github.com/orgs/CSCE331-Fall2026/projects/6/views/1
 
