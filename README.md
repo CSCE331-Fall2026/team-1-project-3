@@ -26,7 +26,7 @@ A publicly hosted web application for Panda Express that allows customers to ord
 - **Front-end:** React
 - **Back-end:** Java/JDBC
 - **Database:** PostgreSQL on AWS
-- **Hosting service:** Cloudfare
+- **Hosting service:** Render (app), Cloudflare (docs)
 - **Authentication:** Google Authenticator
 
 
@@ -52,3 +52,13 @@ A publicly hosted web application for Panda Express that allows customers to ord
 ```bash
 cd client && npm run dev
 ```
+
+## Deploying
+
+Render **Web Service** → connect this repo → Runtime **Docker** (builds the root `Dockerfile`). Under Environment, set `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`. Render sets `PORT` itself.
+
+To test the image locally:
+```bash
+docker build -t pos . && docker run --env-file .env -e PORT=8080 -p 8080:8080 pos
+```
+`.env` takes plain `KEY=VALUE` lines (no `export`), unlike `set-env.sh`.
