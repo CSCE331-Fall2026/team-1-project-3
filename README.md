@@ -30,3 +30,25 @@ A publicly hosted web application for Panda Express that allows customers to ord
 - **Authentication:** Google Authenticator
 
 
+
+## Running Locally
+
+**Prerequisites:** JDK 17+ and Node.js 18+. Maven is not needed; use the included `./mvnw` wrapper.
+
+1. Create `set-env.sh` in the repo root (it's gitignored, so never commit credentials):
+   ```bash
+   export DB_HOST=...
+   export DB_PORT=5432
+   export DB_NAME=...
+   export DB_USER=...
+   export DB_PASSWORD=...
+   ```
+2. Run the whole app (API + site) at http://localhost:3001. This also builds the React client:
+   ```bash
+   source set-env.sh && ./mvnw spring-boot:run
+   ```
+
+**Optional, for UI work:** while step 2 is running, start the React dev server in a second terminal for hot reload at http://localhost:5173 (`/api` is proxied to :3001):
+```bash
+cd client && npm run dev
+```

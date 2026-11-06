@@ -5,6 +5,7 @@ import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
@@ -21,9 +22,29 @@ public final class ManagerRepository {
         }
     }
 
+    /** Current inventory, lowest stock first. One query; used by the kitchen view. */
+    public List<StockRecord> loadStock() throws Exception {
+        try (Connection connection = DatabaseConnection.open(); Statement statement = connection.createStatement()) {
+            return readStock(statement);
+        }
+    }
+
+    private static List<StockRecord> readStock(Statement statement) throws SQLException {
+        List<StockRecord> stock = new ArrayList<>();
+        try (ResultSet resultSet = statement.executeQuery(
+                "SELECT inventory_id, name, stock, min_stock, next_shipment, shelf_life "
+                        + "FROM inventory ORDER BY stock ASC, inventory_id ASC")) {
+            while (resultSet.next())
+                stock.add(new StockRecord(resultSet.getInt("inventory_id"), resultSet.getString("name"),
+                        resultSet.getInt("stock"), resultSet.getInt("min_stock"),
+                        resultSet.getString("next_shipment"), resultSet.getString("shelf_life")));
+        }
+        return stock;
+    }
+
     public ManagerData loadDashboard() throws Exception {
         List<SalesRecord> sales = new ArrayList<>();
-        List<StockRecord> stock = new ArrayList<>();
+        List<StockRecord> stock;
         List<StockGraphRecord> productsUsed = new ArrayList<>();
         List<ReceiptRecord> receipts = new ArrayList<>();
         List<MenuRecord> menu = new ArrayList<>();
@@ -36,14 +57,7 @@ public final class ManagerRepository {
                     sales.add(new SalesRecord(resultSet.getInt("item_id"), resultSet.getString("itemNames"),
                             resultSet.getLong("numSold")));
             }
-            try (ResultSet resultSet = statement.executeQuery(
-                    "SELECT inventory_id, name, stock, min_stock, next_shipment, shelf_life "
-                            + "FROM inventory ORDER BY stock ASC, inventory_id ASC")) {
-                while (resultSet.next())
-                    stock.add(new StockRecord(resultSet.getInt("inventory_id"), resultSet.getString("name"),
-                            resultSet.getInt("stock"), resultSet.getInt("min_stock"),
-                            resultSet.getString("next_shipment"), resultSet.getString("shelf_life")));
-            }
+            stock = readStock(statement);
             try (ResultSet resultSet = statement.executeQuery(
                     "SELECT i.inventory_id, i.name AS inventoryNames, SUM(ri.quantity) AS stockUsed "
                             + "FROM receipt_item ri JOIN item it ON ri.item_id = it.item_id "

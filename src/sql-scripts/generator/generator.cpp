@@ -756,22 +756,21 @@ void Generator::writeFast(ofstream& stream, const vector<shared_ptr<T>>& arr) co
         stream << arr[i]->toVals() << (i == arr.size() - 1 ? ';' : ',');
 }
 
+// The seed inserts explicit IDs, so move every identity/serial sequence past them (issue #16). Safe to re-run.
 static void writeIdentitySequenceSync(ofstream& stream) {
     stream << "\n"
-           << "WITH table_state AS (SELECT MAX(receipt_id) AS max_id FROM receipt), "
-           << "sequence_state AS (SELECT last_value FROM pg_sequences WHERE schemaname = current_schema() "
-           << "AND sequencename = 'receipt_receipt_id_seq') "
-           << "SELECT setval(pg_get_serial_sequence('receipt', 'receipt_id'), "
-           << "GREATEST(COALESCE(table_state.max_id, 0), COALESCE(sequence_state.last_value, 1)), "
-           << "table_state.max_id IS NOT NULL OR sequence_state.last_value IS NOT NULL) "
-           << "FROM table_state CROSS JOIN sequence_state;\n"
-           << "WITH table_state AS (SELECT MAX(receipt_item_id) AS max_id FROM receipt_item), "
-           << "sequence_state AS (SELECT last_value FROM pg_sequences WHERE schemaname = current_schema() "
-           << "AND sequencename = 'receipt_item_receipt_item_id_seq') "
-           << "SELECT setval(pg_get_serial_sequence('receipt_item', 'receipt_item_id'), "
-           << "GREATEST(COALESCE(table_state.max_id, 0), COALESCE(sequence_state.last_value, 1)), "
-           << "table_state.max_id IS NOT NULL OR sequence_state.last_value IS NOT NULL) "
-           << "FROM table_state CROSS JOIN sequence_state;\n";
+           << "DO $$\n"
+           << "DECLARE c record;\n"
+           << "BEGIN\n"
+           << "    FOR c IN SELECT table_name, column_name FROM information_schema.columns\n"
+           << "             WHERE table_schema = current_schema()\n"
+           << "               AND (is_identity = 'YES' OR column_default LIKE 'nextval(%')\n"
+           << "    LOOP\n"
+           << "        EXECUTE format('SELECT setval(pg_get_serial_sequence(%L, %L), COALESCE(MAX(%I), 0) + 1, false) FROM %I',\n"
+           << "                       c.table_name, c.column_name, c.column_name, c.table_name);\n"
+           << "    END LOOP;\n"
+           << "END\n"
+           << "$$;\n";
 }
 
 static void writeLoaderStart(ofstream& stream) {
@@ -1035,7 +1034,7 @@ void Generator::writeAll(const char* filename) const {
     writeDays(outputFile);
     outputFile << "\n-- TIMETABLE GENERATION\n\n";
     writeTimetables(outputFile);
-    // writeIdentitySequenceSync(outputFile);
+    writeIdentitySequenceSync(outputFile);
     // writeLoaderEnd(outputFile);
 
     outputFile.close();
@@ -1059,7 +1058,7 @@ void Generator::writeAllFast(const char* filename) const {
     writeInventoryRelationsFast(outputFile);
     writeDaysFast(outputFile);
     writeTimetablesFast(outputFile);
-    // writeIdentitySequenceSync(outputFile);
+    writeIdentitySequenceSync(outputFile);
     // writeLoaderEnd(outputFile);
 
     outputFile.close();
