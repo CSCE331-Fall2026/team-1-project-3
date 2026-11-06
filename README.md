@@ -52,3 +52,5 @@ A publicly hosted web application for Panda Express that allows customers to ord
 ```bash
 cd client && npm run dev
 ```
+
+The Project 2 JavaFX app is preserved at the `sprint0` tag.
