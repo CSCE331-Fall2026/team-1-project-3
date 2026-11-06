@@ -36,12 +36,13 @@ done
 rm -rf "$OUT_DIR"
 mkdir -p "$OUT_DIR"
 
+# backend/api needs Spring; Maven builds it, not this script.
 javac \
   --module-path "$JAVAFX_LIB" \
   --add-modules javafx.controls,javafx.fxml \
   -cp "$ROOT_DIR/src/external-resources/postgresql-42.2.8.jar" \
   -d "$OUT_DIR" \
-  $(find "./src" -name '*.java' -print)
+  $(find "./src" -name '*.java' -not -path '*/backend/api/*' -print)
 
 mkdir -p "$OUT_DIR/frontend"
 cp -R "$GUI_DIR/frontend/resources" "$OUT_DIR/frontend/"
