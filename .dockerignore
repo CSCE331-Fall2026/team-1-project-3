@@ -1,0 +1,9 @@
+.git/
+target/
+client/node_modules/
+client/node/
+client/dist/
+set-env.sh
+.env
+.env.*
+CLAUDE.md
