@@ -62,3 +62,5 @@ To test the image locally:
 docker build -t pos . && docker run --env-file .env -e PORT=8080 -p 8080:8080 pos
 ```
 `.env` takes plain `KEY=VALUE` lines (no `export`), unlike `set-env.sh`.
+
+The Project 2 JavaFX app is preserved at the `sprint0` tag.
