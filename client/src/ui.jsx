@@ -33,7 +33,7 @@ export function FormDialog({ title, header, fields, submitLabel = "OK", onSubmit
         {fields.map((f, i) => (
           <label key={f.name} className="field">
             {f.label}
-            <input name={f.name} placeholder={f.placeholder} autoFocus={i === 0} />
+            <input name={f.name} placeholder={f.placeholder} autoFocus={i === 0} defaultValue={f.defaultValue ?? ""} />
           </label>
         ))}
         <div className="actions">

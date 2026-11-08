@@ -29,24 +29,89 @@ function MenuTab({ notify, ask }) {
   const { data: items, setData, reload } = useApi("/manager/menu", notify);
   const [busyId, setBusyId] = useState(null);
 
-  async function changePrice(item) { 
-    //TODO: change to edit item where pop up is similar to add item but prefilled with current values
-    const v = await ask({
-      title: "Change Price", header: "Enter the new price:", fields: [{ name: "price", label: "Price:" }],
-    });
-    if (!v) return;
-    const cents = parsePrice(v.price);
-    if (cents === null)
-      return dbError(notify, "update price", "Enter a price from 0.00 to 99999999.99 with at most two decimal places.");
-    setBusyId(item.itemId);
+  async function editItem(item) { 
+    //current item details (prefill)
+    const currentItemId = item.itemId;
+    const currentCategoryId = item.categoryId;
+    const currentPrice = item.priceCents ? (item.priceCents / 100).toFixed(2) : "";
+    const currentUnitSize = item.unitSize || "";
+    const currentName = item.name || "";
+    const currentNutrition = item.nutrition || "";
+
+    //ingredient retrieval
+    let ingredients = [];
     try {
-      const r = await api(`/manager/menu/${item.itemId}/price`, { method: "PATCH", body: { priceCents: cents } });
-      setData((list) => list.map((i) => (i.itemId === item.itemId ? { ...i, priceCents: r.priceCents } : i)));
-    } catch (err) {
-      dbError(notify, "update price",
-        err.status === 404 ? "The price value could not be updated." : "The database update failed.");
-    } finally {
-      setBusyId(null);
+      const res = await api("/manager/inventory", { method: "GET" });
+      ingredients = res?.inventory || [];
+    } catch {
+      notify("Error", "Failed to load ingredients", "Could not get ingredient list.");
+      return;
+    }
+
+    //current ingredient IDs for this menu item
+    let currentIngredientIds = [];
+    try {
+      const res = await api(`/manager/menu/${currentItemId}/ingredients`, { method: "GET" });
+      currentIngredientIds = res?.ingredientIds || [];
+      console.log("Current ingredient IDs for item", currentItemId, ":", currentIngredientIds);
+    } catch {
+      // If no endpoint exists, skip ingredient loading
+      console.warn("Could not load current ingredients for item", currentItemId);
+    }
+
+    //Prefilling
+    const v = await ask({
+      title: "Edit Menu Item",
+      header: "Edit details for: " + currentName,
+      submitLabel: "Next: Select Ingredients",
+      fields: [
+        { name: "itemId", label: "Item ID:", defaultValue: currentItemId },
+        { name: "categoryId", label: <span>Category ID<br />(1 - entree,<br />2 - appetizer,<br />3 - drink):</span>, defaultValue: currentCategoryId },
+        { name: "nutrition", label: "Nutrition Info:", defaultValue: currentNutrition },
+        { name: "price", label: "Item Price:", defaultValue: currentPrice },
+        { name: "unitSize", label: "Unit Size:", defaultValue: currentUnitSize },
+        { name: "name", label: "Item Name:", defaultValue: currentName },
+      ],
+    });
+
+    if (!v) return;
+
+    //validate input
+    const priceCents = parsePrice(v.price);
+    if (
+      !/^\d+$/.test(v.itemId.trim()) ||
+      !/^\d+$/.test(v.categoryId.trim()) ||
+      priceCents === null
+    ) {
+      return notify("Input Error", "Invalid Input",
+        "Please provide valid item and category numbers and a price from 0.00 to 99999999.99 (max two decimals).");
+    }
+
+    //show ingredient selection prechecked
+    const selectedIngredientIds = await showIngredientDialog(ingredients, currentIngredientIds);
+    if (selectedIngredientIds === null) return;
+
+    //update
+    setBusyId("edit");
+    try {
+      const { updated } = await api(`/manager/menu/${currentItemId}`, {
+        method: "PUT",
+        body: {
+          itemId: Number(v.itemId),
+          categoryId: Number(v.categoryId),
+          nutrition: v.nutrition,
+          priceCents,
+          unitSize: v.unitSize,
+          name: v.name,
+          ingredientIds: selectedIngredientIds,
+        },
+      });
+      if (updated) reload();
+      } catch (e) {
+        console.error("Error updating menu item:", e);
+        dbError(notify, "edit menu item", "The menu item was not updated.");
+      } finally {
+        setBusyId(null);
     }
   }
 
@@ -130,9 +195,9 @@ function MenuTab({ notify, ask }) {
     }
   }
 
-  async function showIngredientDialog(ingredients) {
+  async function showIngredientDialog(ingredients, preCheckedIds = []) {
     return new Promise((resolve) => {
-      const selected = new Set();
+      const selected = new Set(preCheckedIds);
 
       const modal = document.createElement('div');
       modal.style.cssText = `
@@ -180,8 +245,13 @@ function MenuTab({ notify, ask }) {
         checkbox.dataset.invId = ing.inventoryId;
         checkbox.style.marginRight = '8px';
 
+        const invId = Number(ing.inventoryId);
+        if (preCheckedIds.includes(invId)) {
+          checkbox.checked = true;
+        }
+
         checkbox.addEventListener('change', () => {
-          const invId = Number(checkbox.dataset.invId);
+          i = Number(checkbox.dataset.invId);
           if (checkbox.checked) {
             selected.add(invId);
           } else {
@@ -213,7 +283,7 @@ function MenuTab({ notify, ask }) {
       });
 
       const confirmBtn = document.createElement('button');
-      confirmBtn.textContent = 'Add Item';
+      confirmBtn.textContent = 'Confirm';
       confirmBtn.addEventListener('click', () => {
         modal.remove();
         console.log("Selected ingredients:", Array.from(selected));
@@ -245,7 +315,7 @@ function MenuTab({ notify, ask }) {
         {items?.map((i) => (
           <li key={i.itemId} className="row">
             <span className="info">{`#${i.itemId} ${i.name}:\n- Price: ${money(i.priceCents)}`}</span>
-            <button disabled={busyId === i.itemId} onClick={() => changePrice(i)}>Change Price</button>
+            <button disabled={busyId === i.itemId} onClick={() => editItem(i)}>Edit Item</button>
             <button disabled={busyId === i.itemId} onClick={() => removeItem(i)}>Remove Item</button>
           </li>
         ))}

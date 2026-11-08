@@ -14,6 +14,8 @@ import java.util.ArrayList;
 public final class MenuRecord {
     private final int itemID;
     private final BigDecimal price;
+    private final String nutrition;
+    private final String unitSize;
     private final String name;
     private final int categoryID;
     private final List<Integer> ingredientIDs;
@@ -31,12 +33,14 @@ public final class MenuRecord {
      */
 
     //for new menu items: ingredientIDs can be passed
-    public MenuRecord(int itemID, BigDecimal price, String name, int categoryID, List<Integer> ingredientIDs) {
+    public MenuRecord(int itemID, BigDecimal price, String name, int categoryID, List<Integer> ingredientIDs, String nutrition, String unitSize) {
         this.itemID = itemID;
         this.price = price;
         this.name = name;
         this.categoryID = categoryID;
         this.ingredientIDs = ingredientIDs != null ? new ArrayList<>(ingredientIDs) : new ArrayList<>();
+        this.nutrition = nutrition;
+        this.unitSize = unitSize;
     }
 
     //for cashier view: ingredientIDs not needed
@@ -46,6 +50,8 @@ public final class MenuRecord {
         this.name = name;
         this.categoryID = categoryID;
         this.ingredientIDs = new ArrayList<>();
+        this.nutrition = "";
+        this.unitSize = "";
     }
 
     /**
@@ -100,5 +106,25 @@ public final class MenuRecord {
      */
     public List<Integer> getIngredientIDs() {
         return new ArrayList<>(ingredientIDs);
+    }
+
+    /**
+     * Returns the nutritional information of the menu item.
+     *
+     * @return the menu item nutrition information
+     * @author Ashley Hoang
+     */
+    public String getNutrition() {
+        return nutrition;
+    }
+
+    /**
+     * Returns the unit size of the menu item.
+     *
+     * @return the menu item unit size
+     * @author Ashley Hoang
+     */
+    public String getUnitSize() {
+        return unitSize;
     }
 }

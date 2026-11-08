@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -58,6 +59,31 @@ public class ManagerApi {
         return ResponseEntity.ok(Map.of("inventory", inventory));
     }
 
+    @GetMapping("/menu/{itemId}/ingredients")
+    public ResponseEntity<?> getItemIngredients(@PathVariable int itemId) throws Exception {
+        List<Integer> ingredientIds = repository.getItemIngredients(itemId);
+        return ResponseEntity.ok(Map.of("ingredientIds", ingredientIds));
+    }
+
+    @PutMapping("/menu/{itemId}")
+    public ResponseEntity<?> updateMenuItem(@PathVariable int itemId, @RequestBody NewMenuItem body) throws Exception {
+        if (body.itemId() == null || body.categoryId() == null || !Money.valid(body.priceCents())
+                || body.name() == null || body.name().isBlank())
+            return invalid("Invalid menu item");
+
+        boolean updated = repository.updateMenuItem(
+            itemId,
+            body.itemId(),
+            body.categoryId(),
+            orEmpty(body.nutrition()),
+            Money.fromCents(body.priceCents()),
+            orEmpty(body.unitSize()),
+            body.name(),
+            body.ingredientIds()
+        );
+
+        return ResponseEntity.ok(Map.of("updated", updated));
+    }
 
     @PatchMapping("/menu/{id}/price")
     public ResponseEntity<?> changePrice(@PathVariable int id, @RequestBody PriceChange body) throws Exception {
