@@ -106,7 +106,7 @@ function MenuTab({ notify, ask }) {
     const selectedIngredientIds = await showIngredientDialog(ingredients);
     if (selectedIngredientIds === null) return;
 
-    // Submit the complete form
+    //submit new menu item
     setBusyId("add");
     try {
       const { added } = await api("/manager/menu", {
@@ -207,29 +207,13 @@ function MenuTab({ notify, ask }) {
 
       const cancelBtn = document.createElement('button');
       cancelBtn.textContent = 'Cancel';
-      cancelBtn.style.cssText = `
-        padding: 8px 16px;
-        background: #D61927;
-        color: white;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-      `;
       cancelBtn.addEventListener('click', () => {
         modal.remove();
-        resolve([]);
+        resolve(null);
       });
 
       const confirmBtn = document.createElement('button');
       confirmBtn.textContent = 'Add Item';
-      confirmBtn.style.cssText = `
-        padding: 8px 16px;
-        background: #4CAF50;
-        color: white;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-      `;
       confirmBtn.addEventListener('click', () => {
         modal.remove();
         console.log("Selected ingredients:", Array.from(selected));
@@ -246,7 +230,7 @@ function MenuTab({ notify, ask }) {
       modal.addEventListener('click', (e) => {
         if (e.target === modal) {
           modal.remove();
-          resolve([]);
+          resolve(null);
         }
       });
     });
