@@ -29,7 +29,8 @@ function MenuTab({ notify, ask }) {
   const { data: items, setData, reload } = useApi("/manager/menu", notify);
   const [busyId, setBusyId] = useState(null);
 
-  async function changePrice(item) {
+  async function changePrice(item) { 
+    //TODO: change to edit item where pop up is similar to add item but prefilled with current values
     const v = await ask({
       title: "Change Price", header: "Enter the new price:", fields: [{ name: "price", label: "Price:" }],
     });
@@ -63,34 +64,192 @@ function MenuTab({ notify, ask }) {
   }
 
   async function addItem() {
+    //get ingredients
+    let ingredients = [];
+    try {
+      const res = await api("/manager/inventory", { method: "GET" });
+      ingredients = res?.inventory || [];
+    } catch {
+      notify("Error", "Failed to load ingredients", "Could not get ingredient list.");
+      return;
+    }
+
+    //Main item details
     const v = await ask({
-      title: "Add Menu Item", header: "Enter the details for the new menu item:", submitLabel: "Add",
+      title: "Add Menu Item",
+      header: "Enter the details for the new menu item:",
+      submitLabel: "Next: Select Ingredients",
       fields: [
-        { name: "itemId", label: "Item ID:" }, { name: "categoryId", label: "Category ID:" },
-        { name: "nutrition", label: "Nutrition Info:" }, { name: "price", label: "Item Price:" },
-        { name: "unitSize", label: "Unit Size:" }, { name: "name", label: "Item Name:" },
+        { name: "itemId", label: "Item ID:" },
+        { name: "categoryId", label: <span>Category ID<br />(1 - entree,<br />2 - appetizer,<br />3 - drink):</span> },
+        { name: "nutrition", label: "Nutrition Info:" },
+        { name: "price", label: "Item Price:" },
+        { name: "unitSize", label: "Unit Size:" },
+        { name: "name", label: "Item Name:" },
       ],
     });
+
     if (!v) return;
+
+    //validate input
     const priceCents = parsePrice(v.price);
-    if (!/^\d+$/.test(v.itemId.trim()) || !/^\d+$/.test(v.categoryId.trim()) || priceCents === null)
+    if (
+      !/^\d+$/.test(v.itemId.trim()) ||
+      !/^\d+$/.test(v.categoryId.trim()) ||
+      priceCents === null
+    ) {
       return notify("Input Error", "Invalid Input",
         "Please provide valid item and category numbers and a price from 0.00 to 99999999.99 (max two decimals).");
+    }
+
+    //show ingredient selection
+    const selectedIngredientIds = await showIngredientDialog(ingredients);
+    if (selectedIngredientIds === null) return;
+
+    // Submit the complete form
     setBusyId("add");
     try {
       const { added } = await api("/manager/menu", {
         method: "POST",
         body: {
-          itemId: Number(v.itemId), categoryId: Number(v.categoryId), nutrition: v.nutrition,
-          priceCents, unitSize: v.unitSize, name: v.name,
+          itemId: Number(v.itemId),
+          categoryId: Number(v.categoryId),
+          nutrition: v.nutrition,
+          priceCents,
+          unitSize: v.unitSize,
+          name: v.name,
+          ingredientIds: selectedIngredientIds,
         },
       });
       if (added) reload();
-    } catch {
+    } catch (e) {
+      console.error("Error adding menu item:", e);
       dbError(notify, "add menu item", "The menu item was not added.");
     } finally {
       setBusyId(null);
     }
+  }
+
+  async function showIngredientDialog(ingredients) {
+    return new Promise((resolve) => {
+      const selected = new Set();
+
+      const modal = document.createElement('div');
+      modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.6);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+      `;
+
+      const content = document.createElement('div');
+      content.style.cssText = `
+        background: white;
+        padding: 24px;
+        border-radius: 8px;
+        max-width: 500px;
+        max-height: 80vh;
+        overflow-y: auto;
+      `;
+
+      const title = document.createElement('h3');
+      title.textContent = 'Select Ingredients:';
+      title.style.marginTop = '0';
+      content.appendChild(title);
+
+      const list = document.createElement('div');
+      list.style.margin = '16px 0';
+
+      ingredients.forEach((ing) => {
+        const label = document.createElement('label');
+        label.style.cssText = `
+          display: block;
+          padding: 8px 0;
+          cursor: pointer;
+          border-bottom: 1px solid #eee;
+        `;
+
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.dataset.invId = ing.inventoryId;
+        checkbox.style.marginRight = '8px';
+
+        checkbox.addEventListener('change', () => {
+          const invId = Number(checkbox.dataset.invId);
+          if (checkbox.checked) {
+            selected.add(invId);
+          } else {
+            selected.delete(invId);
+          }
+        });
+
+        const text = document.createTextNode(ing.name);
+        label.appendChild(checkbox);
+        label.appendChild(text);
+        list.appendChild(label);
+      });
+
+      content.appendChild(list);
+
+      const buttons = document.createElement('div');
+      buttons.style.cssText = `
+        margin-top: 16px;
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+      `;
+
+      const cancelBtn = document.createElement('button');
+      cancelBtn.textContent = 'Cancel';
+      cancelBtn.style.cssText = `
+        padding: 8px 16px;
+        background: #D61927;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+      `;
+      cancelBtn.addEventListener('click', () => {
+        modal.remove();
+        resolve([]);
+      });
+
+      const confirmBtn = document.createElement('button');
+      confirmBtn.textContent = 'Add Item';
+      confirmBtn.style.cssText = `
+        padding: 8px 16px;
+        background: #4CAF50;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+      `;
+      confirmBtn.addEventListener('click', () => {
+        modal.remove();
+        console.log("Selected ingredients:", Array.from(selected));
+        resolve(Array.from(selected));
+      });
+
+      buttons.appendChild(cancelBtn);
+      buttons.appendChild(confirmBtn);
+      content.appendChild(buttons);
+
+      modal.appendChild(content);
+      document.body.appendChild(modal);
+
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+          modal.remove();
+          resolve([]);
+        }
+      });
+    });
   }
 
   return (

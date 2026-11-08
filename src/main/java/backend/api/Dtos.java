@@ -53,7 +53,7 @@ public final class Dtos {
     }
 
     public record NewMenuItem(Integer itemId, Integer categoryId, String nutrition, Long priceCents,
-            String unitSize, String name) {
+            String unitSize, String name, java.util.List<Integer> ingredientIds) {
     }
 
     public record PriceChange(Long priceCents) {

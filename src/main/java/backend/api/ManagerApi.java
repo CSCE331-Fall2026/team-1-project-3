@@ -1,4 +1,4 @@
-package backend.api;
+package backend.api; 
 
 import backend.api.Dtos.MenuItem;
 import backend.api.Dtos.NewMenuItem;
@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import backend.models.InventoryRecord;
 
 import java.util.List;
 import java.util.Map;
@@ -46,9 +47,17 @@ public class ManagerApi {
                 || body.name() == null || body.name().isBlank())
             return invalid("Invalid menu item");
         boolean added = repository.addMenuItem(body.itemId(), body.categoryId(), orEmpty(body.nutrition()),
-                Money.fromCents(body.priceCents()), orEmpty(body.unitSize()), body.name());
+                Money.fromCents(body.priceCents()), orEmpty(body.unitSize()), body.name(), body.ingredientIds());
+
         return ResponseEntity.status(201).body(Map.of("added", added));
     }
+
+    @GetMapping("/inventory")
+    public ResponseEntity<?> getInventory() throws Exception {
+        List<InventoryRecord> inventory = repository.loadInventory();
+        return ResponseEntity.ok(Map.of("inventory", inventory));
+    }
+
 
     @PatchMapping("/menu/{id}/price")
     public ResponseEntity<?> changePrice(@PathVariable int id, @RequestBody PriceChange body) throws Exception {

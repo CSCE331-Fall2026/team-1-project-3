@@ -1,6 +1,9 @@
 package backend.models;
 
 import java.math.BigDecimal;
+import java.util.List;
+import java.util.ArrayList;
+
 
 /**
  * This class represents a menu record, including the item ID, name, and price.
@@ -13,6 +16,7 @@ public final class MenuRecord {
     private final BigDecimal price;
     private final String name;
     private final int categoryID;
+    private final List<Integer> ingredientIDs;
 
     /**
      * Creates a menu record with the item's database ID, price, name, and category.
@@ -21,15 +25,27 @@ public final class MenuRecord {
      * @param price      the item's price
      * @param name       the item's name
      * @param categoryID the item's category ID
+     * @param ingredientIDs the list of ingredient IDs
      * @author Pablo Almanza
      * @author Ashley Hoang
      */
 
+    //for new menu items: ingredientIDs can be passed
+    public MenuRecord(int itemID, BigDecimal price, String name, int categoryID, List<Integer> ingredientIDs) {
+        this.itemID = itemID;
+        this.price = price;
+        this.name = name;
+        this.categoryID = categoryID;
+        this.ingredientIDs = ingredientIDs != null ? new ArrayList<>(ingredientIDs) : new ArrayList<>();
+    }
+
+    //for cashier view: ingredientIDs not needed
     public MenuRecord(int itemID, BigDecimal price, String name, int categoryID) {
         this.itemID = itemID;
         this.price = price;
         this.name = name;
         this.categoryID = categoryID;
+        this.ingredientIDs = new ArrayList<>();
     }
 
     /**
@@ -74,5 +90,15 @@ public final class MenuRecord {
      */
     public int getCategoryID() {
         return categoryID;
+    }
+
+    /**
+     * Returns the list of ingredient IDs for the menu item.
+     *
+     * @return the list of ingredient IDs
+     * @author Ashley Hoang
+     */
+    public List<Integer> getIngredientIDs() {
+        return new ArrayList<>(ingredientIDs);
     }
 }
