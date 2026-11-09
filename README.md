@@ -3,7 +3,9 @@
 A publicly hosted web application for Panda Express that allows customers to order from the menu, kitchen staff to see live inventory, servers to efficiently record and view customer orders, and managers to view reports.
 
 ## Live Links
-- **Deployed app:** http://localhost:3000/
+
+- **Live Deployed app:** https://team-1-pos.onrender.com/
+- **Local Deployed app:** http://localhost:3000/
 - **Documentation:** https://team-1-project-3.ivin-98.workers.dev/
 - **Project board (backlog + burn-up):** https://github.com/orgs/CSCE331-Fall2026/projects/6/views/1
 
@@ -24,7 +26,7 @@ A publicly hosted web application for Panda Express that allows customers to ord
 - **Front-end:** React
 - **Back-end:** Java/JDBC
 - **Database:** PostgreSQL on AWS
-- **Hosting service:** Cloudfare
+- **Hosting service:** Render (app), Cloudflare (docs)
 - **Authentication:** Google Authenticator
 
 
@@ -50,3 +52,15 @@ A publicly hosted web application for Panda Express that allows customers to ord
 ```bash
 cd client && npm run dev
 ```
+
+## Deploying
+
+Render **Web Service** → connect this repo → Runtime **Docker** (builds the root `Dockerfile`). Under Environment, set `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`. Render sets `PORT` itself.
+
+To test the image locally:
+```bash
+docker build -t pos . && docker run --env-file .env -e PORT=8080 -p 8080:8080 pos
+```
+`.env` takes plain `KEY=VALUE` lines (no `export`), unlike `set-env.sh`.
+
+The Project 2 JavaFX app is preserved at the `sprint0` tag.

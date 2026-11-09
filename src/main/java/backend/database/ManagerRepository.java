@@ -1,4 +1,4 @@
-package backend.database;
+package backend.database; 
 
 import backend.models.*;
 import java.math.BigDecimal;
@@ -42,6 +42,52 @@ public final class ManagerRepository {
         return stock;
     }
 
+    private static List<Integer> loadIngredientIDs(Connection connection, int itemId) throws SQLException {
+        List<Integer> ingredientIds = new ArrayList<>();
+        try (PreparedStatement statement = connection.prepareStatement(
+            "SELECT inventory_id FROM ingredient_list WHERE item_id = ? ORDER BY inventory_id")) {
+            
+            statement.setInt(1, itemId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    ingredientIds.add(resultSet.getInt("inventory_id"));
+                }
+            }
+        }
+
+        return ingredientIds;
+    }
+
+    public List<InventoryRecord> loadInventory() throws SQLException {
+        List<InventoryRecord> inventory = new ArrayList<>();
+        try (Connection connection = DatabaseConnection.open();
+            PreparedStatement statement = connection.prepareStatement(
+                "SELECT inventory_id, name, nutrition, stock, min_stock, next_shipment, shelf_life, unit_size "
+                + "FROM inventory ORDER BY inventory_id")) {
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    inventory.add(new InventoryRecord(
+                        resultSet.getInt("inventory_id"),
+                        resultSet.getString("name"),
+                        resultSet.getString("nutrition"),
+                        resultSet.getInt("stock"),
+                        resultSet.getInt("min_stock"),
+                        resultSet.getString("next_shipment"),
+                        resultSet.getString("shelf_life"),
+                        resultSet.getFloat("unit_size")
+                    ));
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+        
+        return inventory;
+    }
+
+
     public ManagerData loadDashboard() throws Exception {
         List<SalesRecord> sales = new ArrayList<>();
         List<StockRecord> stock;
@@ -80,10 +126,11 @@ public final class ManagerRepository {
                             resultSet.getBigDecimal("price_at_sale"), resultSet.getString("receipt_timestamp")));
             }
             try (ResultSet resultSet = statement.executeQuery(
-                    "SELECT item_id, name, price, category_id FROM item WHERE active = TRUE ORDER BY item_id")) {
+                    "SELECT item_id, name, price, category_id, nutrition, unit_size FROM item WHERE active = TRUE ORDER BY item_id")) {
                 while (resultSet.next())
                     menu.add(new MenuRecord(resultSet.getInt("item_id"), resultSet.getBigDecimal("price"),
-                            resultSet.getString("name"), resultSet.getInt("category_id")));
+                            resultSet.getString("name"), resultSet.getInt("category_id"), loadIngredientIDs(connection, resultSet.getInt("item_id")), 
+                            resultSet.getString("nutrition"), resultSet.getString("unit_size")));
             }
             try (ResultSet resultSet = statement.executeQuery(
                     "SELECT EXTRACT(HOUR FROM receipt_timestamp) AS hour, COUNT(*) as order_count, SUM(total_cost) AS total_sales "
@@ -180,18 +227,124 @@ public final class ManagerRepository {
     }
 
     public boolean addMenuItem(int itemId, int categoryId, String nutritionInfo,
-            BigDecimal itemPrice, String size, String itemName) throws Exception {
-        try (Connection connection = DatabaseConnection.open();
-                PreparedStatement statement = connection.prepareStatement(
+        BigDecimal itemPrice, String size, String itemName, List<Integer> ingredientIds) throws Exception {
+
+        try (Connection connection = DatabaseConnection.open()) {
+            connection.setAutoCommit(false);
+            try {
+                //Insertion of new menu item
+                try (PreparedStatement stmt = connection.prepareStatement(
                         "INSERT INTO item (item_id, category_id, nutrition, price, unit_size, name, active) "
-                                + "VALUES (?, ?, ?, ?, ?, ?, TRUE)")) {
-            statement.setInt(1, itemId);
-            statement.setInt(2, categoryId);
-            statement.setString(3, nutritionInfo);
-            statement.setBigDecimal(4, itemPrice);
-            statement.setString(5, size);
-            statement.setString(6, itemName);
-            return statement.executeUpdate() == 1;
+                        + "VALUES (?, ?, ?, ?, ?, ?, TRUE)")) {
+                    stmt.setInt(1, itemId);
+                    stmt.setInt(2, categoryId);
+                    stmt.setString(3, nutritionInfo);
+                    stmt.setBigDecimal(4, itemPrice);
+                    stmt.setString(5, size);
+                    stmt.setString(6, itemName);
+                    if (stmt.executeUpdate() != 1) {
+                        connection.rollback();
+                        return false;
+                    }
+                }
+
+                //Insertion of ingredients
+                if (ingredientIds != null && !ingredientIds.isEmpty()) {
+                    try (PreparedStatement ingStmt = connection.prepareStatement(
+                            "INSERT INTO ingredient_list (item_id, inventory_id) VALUES (?, ?)")) {
+                        for (Integer invId : ingredientIds) {
+                            if (invId != null) {
+                                ingStmt.setInt(1, itemId);
+                                ingStmt.setInt(2, invId);
+                                ingStmt.addBatch();
+                            }
+                        }
+                        ingStmt.executeBatch();
+                    }
+                }
+
+                connection.commit();
+                return true;
+            } catch (Exception e) {
+                connection.rollback();
+                e.printStackTrace();
+                throw e;
+            }
+        }
+    }
+
+    public List<Integer> getItemIngredients(int itemId) throws SQLException {
+        List<Integer> ingredientIds = new ArrayList<>();
+        try (Connection conn = DatabaseConnection.open();
+            PreparedStatement stmt = conn.prepareStatement(
+                "SELECT inventory_id FROM ingredient_list WHERE item_id = ?")) {
+            stmt.setInt(1, itemId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    ingredientIds.add(rs.getInt("inventory_id"));
+                }
+            }
+        }
+        catch (SQLException e) {
+            e.printStackTrace();
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+        return ingredientIds;
+    }
+
+    public boolean updateMenuItem(int itemId, int newItemId, int categoryId, String nutritionInfo,
+            BigDecimal itemPrice, String size, String itemName, List<Integer> ingredientIds) throws Exception {
+        
+        try (Connection connection = DatabaseConnection.open()) {
+            connection.setAutoCommit(false);
+            try {
+                // Update item details
+                try (PreparedStatement stmt = connection.prepareStatement(
+                        "UPDATE item SET item_id = ?, category_id = ?, nutrition = ?, price = ?, unit_size = ?, name = ? "
+                        + "WHERE item_id = ?")) {
+                    stmt.setInt(1, newItemId);
+                    stmt.setInt(2, categoryId);
+                    stmt.setString(3, nutritionInfo);
+                    stmt.setBigDecimal(4, itemPrice);
+                    stmt.setString(5, size);
+                    stmt.setString(6, itemName);
+                    stmt.setInt(7, itemId);
+                    if (stmt.executeUpdate() != 1) {
+                        connection.rollback();
+                        return false;
+                    }
+                }
+
+                // Delete existing ingredients
+                try (PreparedStatement stmt = connection.prepareStatement(
+                        "DELETE FROM ingredient_list WHERE item_id = ?")) {
+                    stmt.setInt(1, itemId);
+                    stmt.executeUpdate();
+                }
+
+                // Insert new ingredients
+                if (ingredientIds != null && !ingredientIds.isEmpty()) {
+                    try (PreparedStatement stmt = connection.prepareStatement(
+                            "INSERT INTO ingredient_list (item_id, inventory_id) VALUES (?, ?)")) {
+                        for (Integer invId : ingredientIds) {
+                            if (invId != null) {
+                                stmt.setInt(1, newItemId);
+                                stmt.setInt(2, invId);
+                                stmt.addBatch();
+                            }
+                        }
+                        stmt.executeBatch();
+                    }
+                }
+
+                connection.commit();
+                return true;
+            } catch (Exception e) {
+                connection.rollback();
+                e.printStackTrace();
+                throw e;
+            }
         }
     }
 

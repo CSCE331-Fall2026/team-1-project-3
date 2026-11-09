@@ -37,7 +37,7 @@ export function FormDialog({ title, header, fields, submitLabel = "OK", onSubmit
         {fields.map((f, i) => (
           <label key={f.name} className="grid grid-cols-[110px_1fr] gap-2 items-center mb-2.5">
             {f.label}
-            <input name={f.name} placeholder={f.placeholder} autoFocus={i === 0} />
+            <input name={f.name} placeholder={f.placeholder} autoFocus={i === 0} defaultValue={f.defaultValue ?? ""} />
           </label>
         ))}
         <div className="flex gap-2 justify-end">
