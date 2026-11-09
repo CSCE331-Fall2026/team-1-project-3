@@ -22,10 +22,10 @@
 ## Retrospective
 
 **What went well?**
-ANSWER
+We have good version control and we were able to distrubute the workload effectively. Everything was much more organized
 
 **What did not go well?**
-ANSWER
+We were having issues with our tasks not being specific enough, being too specific, or being over something that was already done. Nothing that caused too much of a slow down, and these issues were fixed pretty easily. We also struggled adapting to Agile at the beginning, with there being confusion surrounding who does what. By the end, we are all clear on what we are doing.
 
 **How many story points were completed vs planned?**
-ANSWER
+45 points worth of tasks were planned, and all 45 points were completed.
