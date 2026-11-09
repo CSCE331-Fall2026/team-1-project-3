@@ -1,0 +1,550 @@
+import { useCallback, useEffect, useState } from "react";
+import {
+  Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis,
+} from "recharts";
+import { api, money, parsePrice, MAX_STOCK } from "./lib.js";
+import { FormDialog, Notice } from "./ui.jsx";
+
+const TOOLBAR = "flex gap-3 items-center px-3.5 py-2";
+const TOOLBAR_TITLE = "text-[20px] font-bold";
+const ROW = "flex gap-2.5 items-center px-2.5 py-[5px] border-b border-[#ddd]";
+const INFO = "flex-1 whitespace-pre-line font-bold text-black";
+
+const LOAD_FAILED = ["Manager Load Failed", "The manager data could not be loaded.",
+  "Please check the database connection and try again."];
+
+// Fetch-on-mount hook (replaces runQuery + the controllerActive guard).
+function useApi(path, notify) {
+  const [data, setData] = useState(null);
+  const reload = useCallback(() => {
+    const controller = new AbortController();
+    api(path, { signal: controller.signal })
+      .then(setData)
+      .catch((err) => err.name !== "AbortError" && notify(...LOAD_FAILED));
+    return () => controller.abort();
+  }, [path]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => reload(), [reload]);
+  return { data, setData, reload };
+}
+
+const dbError = (notify, op, details) => notify("Database Error", `Unable to ${op}`, details);
+
+/* ------------------------------ Menu Items ------------------------------ */
+function MenuTab({ notify, ask }) {
+  const { data: items, setData, reload } = useApi("/manager/menu", notify);
+  const [busyId, setBusyId] = useState(null);
+
+  async function editItem(item) { 
+    //current item details (prefill)
+    const currentItemId = item.itemId;
+    const currentCategoryId = item.categoryId;
+    const currentPrice = item.priceCents ? (item.priceCents / 100).toFixed(2) : "";
+    const currentUnitSize = item.unitSize || "";
+    const currentName = item.name || "";
+    const currentNutrition = item.nutrition || "";
+
+    //ingredient retrieval
+    let ingredients = [];
+    try {
+      const res = await api("/manager/inventory", { method: "GET" });
+      ingredients = res?.inventory || [];
+    } catch {
+      notify("Error", "Failed to load ingredients", "Could not get ingredient list.");
+      return;
+    }
+
+    //current ingredient IDs for this menu item
+    let currentIngredientIds = [];
+    try {
+      const res = await api(`/manager/menu/${currentItemId}/ingredients`, { method: "GET" });
+      currentIngredientIds = res?.ingredientIds || [];
+      console.log("Current ingredient IDs for item", currentItemId, ":", currentIngredientIds);
+    } catch {
+      // If no endpoint exists, skip ingredient loading
+      console.warn("Could not load current ingredients for item", currentItemId);
+    }
+
+    //Prefilling
+    const v = await ask({
+      title: "Edit Menu Item",
+      header: "Edit details for: " + currentName,
+      submitLabel: "Next: Select Ingredients",
+      fields: [
+        { name: "itemId", label: "Item ID:", defaultValue: currentItemId },
+        { name: "categoryId", label: <span>Category ID<br />(1 - entree,<br />2 - appetizer,<br />3 - drink):</span>, defaultValue: currentCategoryId },
+        { name: "nutrition", label: "Nutrition Info:", defaultValue: currentNutrition },
+        { name: "price", label: "Item Price:", defaultValue: currentPrice },
+        { name: "unitSize", label: "Unit Size:", defaultValue: currentUnitSize },
+        { name: "name", label: "Item Name:", defaultValue: currentName },
+      ],
+    });
+
+    if (!v) return;
+
+    //validate input
+    const priceCents = parsePrice(v.price);
+    if (
+      !/^\d+$/.test(v.itemId.trim()) ||
+      !/^\d+$/.test(v.categoryId.trim()) ||
+      priceCents === null
+    ) {
+      return notify("Input Error", "Invalid Input",
+        "Please provide valid item and category numbers and a price from 0.00 to 99999999.99 (max two decimals).");
+    }
+
+    //show ingredient selection prechecked
+    const selectedIngredientIds = await showIngredientDialog(ingredients, currentIngredientIds);
+    if (selectedIngredientIds === null) return;
+
+    //update
+    setBusyId("edit");
+    try {
+      const { updated } = await api(`/manager/menu/${currentItemId}`, {
+        method: "PUT",
+        body: {
+          itemId: Number(v.itemId),
+          categoryId: Number(v.categoryId),
+          nutrition: v.nutrition,
+          priceCents,
+          unitSize: v.unitSize,
+          name: v.name,
+          ingredientIds: selectedIngredientIds,
+        },
+      });
+      if (updated) reload();
+      } catch (e) {
+        console.error("Error updating menu item:", e);
+        dbError(notify, "edit menu item", "The menu item was not updated.");
+      } finally {
+        setBusyId(null);
+    }
+  }
+
+  async function removeItem(item) {
+    setBusyId(item.itemId);
+    try {
+      const { removed } = await api(`/manager/menu/${item.itemId}`, { method: "DELETE" });
+      if (removed) setData((list) => list.filter((i) => i.itemId !== item.itemId));
+      else dbError(notify, "remove menu item", "The menu item was not active.");
+    } catch {
+      dbError(notify, "remove menu item", "The database update failed.");
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function addItem() {
+    //get ingredients
+    let ingredients = [];
+    try {
+      const res = await api("/manager/inventory", { method: "GET" });
+      ingredients = res?.inventory || [];
+    } catch {
+      notify("Error", "Failed to load ingredients", "Could not get ingredient list.");
+      return;
+    }
+
+    //Main item details
+    const v = await ask({
+      title: "Add Menu Item",
+      header: "Enter the details for the new menu item:",
+      submitLabel: "Next: Select Ingredients",
+      fields: [
+        { name: "itemId", label: "Item ID:" },
+        { name: "categoryId", label: <span>Category ID<br />(1 - entree,<br />2 - appetizer,<br />3 - drink):</span> },
+        { name: "nutrition", label: "Nutrition Info:" },
+        { name: "price", label: "Item Price:" },
+        { name: "unitSize", label: "Unit Size:" },
+        { name: "name", label: "Item Name:" },
+      ],
+    });
+
+    if (!v) return;
+
+    //validate input
+    const priceCents = parsePrice(v.price);
+    if (
+      !/^\d+$/.test(v.itemId.trim()) ||
+      !/^\d+$/.test(v.categoryId.trim()) ||
+      priceCents === null
+    ) {
+      return notify("Input Error", "Invalid Input",
+        "Please provide valid item and category numbers and a price from 0.00 to 99999999.99 (max two decimals).");
+    }
+
+    //show ingredient selection
+    const selectedIngredientIds = await showIngredientDialog(ingredients);
+    if (selectedIngredientIds === null) return;
+
+    //submit new menu item
+    setBusyId("add");
+    try {
+      const { added } = await api("/manager/menu", {
+        method: "POST",
+        body: {
+          itemId: Number(v.itemId),
+          categoryId: Number(v.categoryId),
+          nutrition: v.nutrition,
+          priceCents,
+          unitSize: v.unitSize,
+          name: v.name,
+          ingredientIds: selectedIngredientIds,
+        },
+      });
+      if (added) reload();
+    } catch (e) {
+      console.error("Error adding menu item:", e);
+      dbError(notify, "add menu item", "The menu item was not added.");
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function showIngredientDialog(ingredients, preCheckedIds = []) {
+    return new Promise((resolve) => {
+      const selected = new Set(preCheckedIds);
+
+      const modal = document.createElement('div');
+      modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.6);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+      `;
+
+      const content = document.createElement('div');
+      content.style.cssText = `
+        background: white;
+        padding: 24px;
+        border-radius: 8px;
+        max-width: 500px;
+        max-height: 80vh;
+        overflow-y: auto;
+      `;
+
+      const title = document.createElement('h3');
+      title.textContent = 'Select Ingredients:';
+      title.style.marginTop = '0';
+      content.appendChild(title);
+
+      const list = document.createElement('div');
+      list.style.margin = '16px 0';
+
+      ingredients.forEach((ing) => {
+        const label = document.createElement('label');
+        label.style.cssText = `
+          display: block;
+          padding: 8px 0;
+          cursor: pointer;
+          border-bottom: 1px solid #eee;
+        `;
+
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.dataset.invId = ing.inventoryId;
+        checkbox.style.marginRight = '8px';
+
+        const invId = Number(ing.inventoryId);
+        if (preCheckedIds.includes(invId)) {
+          checkbox.checked = true;
+        }
+
+        checkbox.addEventListener('change', () => {
+          i = Number(checkbox.dataset.invId);
+          if (checkbox.checked) {
+            selected.add(invId);
+          } else {
+            selected.delete(invId);
+          }
+        });
+
+        const text = document.createTextNode(ing.name);
+        label.appendChild(checkbox);
+        label.appendChild(text);
+        list.appendChild(label);
+      });
+
+      content.appendChild(list);
+
+      const buttons = document.createElement('div');
+      buttons.style.cssText = `
+        margin-top: 16px;
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+      `;
+
+      const cancelBtn = document.createElement('button');
+      cancelBtn.textContent = 'Cancel';
+      cancelBtn.addEventListener('click', () => {
+        modal.remove();
+        resolve(null);
+      });
+
+      const confirmBtn = document.createElement('button');
+      confirmBtn.textContent = 'Confirm';
+      confirmBtn.addEventListener('click', () => {
+        modal.remove();
+        console.log("Selected ingredients:", Array.from(selected));
+        resolve(Array.from(selected));
+      });
+
+      buttons.appendChild(cancelBtn);
+      buttons.appendChild(confirmBtn);
+      content.appendChild(buttons);
+
+      modal.appendChild(content);
+      document.body.appendChild(modal);
+
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+          modal.remove();
+          resolve(null);
+        }
+      });
+    });
+  }
+
+  return (
+    <>
+      <div className={TOOLBAR}>
+        <button disabled={busyId === "add"} onClick={addItem}>Add Menu Item</button>
+      </div>
+      <ul>
+        {items?.map((i) => (
+          <li key={i.itemId} className={ROW}>
+            <span className={INFO}>{`#${i.itemId} ${i.name}:\n- Price: ${money(i.priceCents)}`}</span>
+            <button disabled={busyId === i.itemId} onClick={() => editItem(i)}>Edit Item</button>
+            <button disabled={busyId === i.itemId} onClick={() => removeItem(i)}>Remove Item</button>
+          </li>
+        ))}
+      </ul>
+    </>
+  );
+}
+
+/* ------------------------------ Ingredient Stock ------------------------------ */
+const sortStock = (list) => [...list].sort((a, b) => a.stock - b.stock || a.inventoryId - b.inventoryId);
+// red below minimum, yellow up to 1.5x minimum, otherwise white
+const stockColor = ({ stock, minStock }) =>
+  stock < minStock ? "#FF3333" : stock <= Math.floor(minStock * 1.5) ? "#FFCC00" : "#FFFFFF";
+
+function StockTab({ notify, ask }) {
+  const { data: items, setData } = useApi("/manager/stock", notify);
+  const [busyId, setBusyId] = useState(null);
+
+  async function changeStock(item) {
+    const v = await ask({
+      title: "Change Stock", header: "Enter the change in stock (add a '-' if decreasing stock):",
+      fields: [{ name: "delta", label: "Change in stock:" }],
+    });
+    if (!v) return;
+    const text = v.delta.trim();
+    if (!/^[+-]?\d+$/.test(text) || Math.abs(Number(text)) > MAX_STOCK)
+      return dbError(notify, "update stock", "Enter a whole number no larger than 99999999 (negative to decrease).");
+    const delta = Number(text);
+    if (delta === 0) return;
+    setBusyId(item.inventoryId);
+    try {
+      const r = await api(`/manager/stock/${item.inventoryId}`, { method: "PATCH", body: { delta } });
+      if (r.stock !== null) {
+        setData((list) => sortStock(list.map((i) => (i.inventoryId === item.inventoryId ? { ...i, stock: r.stock } : i))));
+        if (!r.updated) dbError(notify, "update stock", `The stock value changed. Current stock: ${r.stock}`);
+      } else if (r.missing) {
+        setData((list) => list.filter((i) => i.inventoryId !== item.inventoryId));
+        dbError(notify, "update stock", "The inventory record no longer exists.");
+      }
+    } catch {
+      dbError(notify, "update stock", "The database update failed.");
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  return (
+    <ul>
+      {items?.map((i) => (
+        <li key={i.inventoryId} className={ROW} style={{ background: stockColor(i) }}>
+          <span className={INFO}>
+            {`#${i.inventoryId} ${i.name}:\n- Stock: ${i.stock}\n- Minimum Stock: ${i.minStock}\n- Next Shipment: ${i.nextShipment}\n- Shelf Life: ${i.shelfLife}`}
+          </span>
+          <button disabled={busyId === i.inventoryId} onClick={() => changeStock(i)}>Change Stock</button>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/* ------------------------------ Bar charts (Items Sold / Product Usage) ------------------------------ */
+function ChartTab({ endpoint, title, rangePrefix, valueLabel, failure, notify, ask }) {
+  const [chart, setChart] = useState({ title, rows: null });
+
+  const load = useCallback(async (range) => {
+    const qs = range ? `?start=${encodeURIComponent(range.start)}&end=${encodeURIComponent(range.end)}` : "";
+    try {
+      const rows = await api(`/manager/${endpoint}${qs}`);
+      setChart({
+        title: range ? `${rangePrefix} From ${range.start} to ${range.end}` : title,
+        rows: rows.map((r) => ({ label: r.label ?? `#${r.id}-${r.name} ${r.value}`, value: r.value })),
+      });
+    } catch {
+      notify(...(range ? failure : LOAD_FAILED));
+    }
+  }, [endpoint]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { load(null); }, [load]);
+
+  async function changePeriod() {
+    const v = await ask({
+      title: "Change Time Period", header: "Enter the start and end time periods (inclusive):",
+      fields: [
+        { name: "start", label: "Start:", placeholder: "ex. 2026-01-31 00:00:00" },
+        { name: "end", label: "End:", placeholder: "ex. 2026-01-31 23:59:59" },
+      ],
+    });
+    if (!v) return;
+    const start = v.start.trim(), end = v.end.trim();
+    if (!start || !end) return notify("Invalid Input", "Both start and end time periods are required.", "");
+    load({ start, end });
+  }
+
+  return (
+    <>
+      <div className={TOOLBAR}>
+        <button onClick={changePeriod}>Change Time Period</button>
+        <h2 className={TOOLBAR_TITLE}>{chart.title}</h2>
+      </div>
+      {chart.rows && (
+        <div className="w-full" style={{ height: Math.max(320, chart.rows.length * 28 + 80) }}>
+          <ResponsiveContainer>
+            <BarChart data={chart.rows} layout="vertical" margin={{ left: 16, right: 24, bottom: 16 }}>
+              <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+              <XAxis type="number" allowDecimals={false} label={{ value: valueLabel, position: "insideBottom", offset: -8 }} />
+              <YAxis type="category" dataKey="label" width={260} interval={0} tick={{ fontSize: 12 }} />
+              <Tooltip />
+              <Bar dataKey="value" fill="#D61927" />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      )}
+    </>
+  );
+}
+
+/* ------------------------------ Order History ------------------------------ */
+function ReceiptsTab({ notify }) {
+  const { data: rows } = useApi("/manager/receipts", notify);
+  const receipts = [];
+  for (const r of rows ?? []) {
+    let g = receipts.at(-1);
+    if (!g || g.id !== r.receiptId) receipts.push((g = { id: r.receiptId, timestamp: r.timestamp, items: [] }));
+    g.items.push(r);
+  }
+  return (
+    <div>
+      {receipts.map((g) => (
+        <details className="border border-[grey] rounded-[10px] mb-1.5 px-3 py-1.5" key={g.id} name="receipts">
+          <summary className="cursor-pointer font-bold">Receipt {g.id}</summary>
+          {g.items.map((r, i) => (
+            <p className="my-1.5" key={i}>{`#${r.itemId} ${r.itemName}    x${r.quantity}    ${money(r.lineTotalCents)}`}</p>
+          ))}
+          <p className="my-1.5">Total: {money(g.items.reduce((s, r) => s + r.lineTotalCents, 0))}</p>
+          <p className="my-1.5 text-[#666]">{g.timestamp}</p>
+        </details>
+      ))}
+    </div>
+  );
+}
+
+/* ------------------------------ X Report ------------------------------ */
+function XReportTab({ notify }) {
+  const [rows, setRows] = useState(null);
+  useEffect(() => {
+    let alive = true;
+    const refresh = () =>
+      api("/manager/x-report")
+        .then((r) => alive && setRows(r))
+        .catch(() => alive && notify("X Report Graph Update Failed", "The X report graph could not be updated.", "Please try again."));
+    refresh();
+    // Refresh at the top of every hour (replaces the Timeline pair).
+    const now = new Date();
+    const untilNextHour = (60 - now.getMinutes()) * 60_000 - now.getSeconds() * 1000 - now.getMilliseconds();
+    let interval;
+    const timeout = setTimeout(() => {
+      refresh();
+      interval = setInterval(refresh, 3_600_000);
+    }, untilNextHour);
+    return () => { alive = false; clearTimeout(timeout); clearInterval(interval); };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const data = rows?.map((r) => ({ label: `${r.hour}:00`, sales: r.orders, revenueCents: r.revenueCents }));
+  return (
+    <>
+      <div className={TOOLBAR}><h2 className={TOOLBAR_TITLE}>Sales Per Hour</h2></div>
+      {data && (
+        <div className="w-full" style={{ height: 420 }}>
+          <ResponsiveContainer>
+            <LineChart data={data} margin={{ left: 8, right: 24, bottom: 24 }}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="label" label={{ value: "Hour of Operation", position: "insideBottom", offset: -12 }} />
+              <YAxis allowDecimals={false} label={{ value: "Number of Sales", angle: -90, position: "insideLeft" }} />
+              <Tooltip content={({ active, payload }) => {
+                const p = active && payload?.[0]?.payload;
+                return p ? (
+                  <div className="bg-white border border-[grey] px-2.5 py-1.5"><strong>{p.label}</strong><br />Sales: {p.sales}<br />Revenue: {money(p.revenueCents)}</div>
+                ) : null;
+              }} />
+              <Line type="monotone" dataKey="sales" stroke="#D61927" strokeWidth={2} />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      )}
+    </>
+  );
+}
+
+/* ------------------------------ Shell ------------------------------ */
+export default function Manager({ onChangeView }) {
+  const [tab, setTab] = useState(0);
+  const [notice, setNotice] = useState(null);
+  const [dialog, setDialog] = useState(null);
+
+  const notify = (title, header, details) => setNotice({ id: Date.now(), title, header, details });
+  // Promise-based prompt: mirrors Dialog.showAndWait() so the tab code reads like the Java.
+  const ask = (config) => new Promise((resolve) => setDialog({ ...config, resolve }));
+  const closeDialog = (value) => { dialog.resolve(value); setDialog(null); };
+
+  const tabs = [
+    ["Menu Items", <MenuTab notify={notify} ask={ask} />],
+    ["Ingredient Stock", <StockTab notify={notify} ask={ask} />],
+    ["Product Usage", <ChartTab endpoint="stock-usage" title="Products Used in Whole Time Period"
+      rangePrefix="Stock Used" valueLabel="Product Used" notify={notify} ask={ask}
+      failure={["Stock Graph Update Failed", "The stock graph could not be updated.", "Please enter valid dates."]} />],
+    ["Order History", <ReceiptsTab notify={notify} />],
+    ["Items Sold", <ChartTab endpoint="sales" title="Items Sold in Whole Time Period"
+      rangePrefix="Items Sold" valueLabel="Number Sold" notify={notify} ask={ask}
+      failure={["Sales Graph Update Failed", "The sales graph could not be updated.", "Please enter valid dates."]} />],
+    ["X Report", <XReportTab notify={notify} />],
+  ];
+
+  return (
+    <div className="h-screen flex flex-col">
+      <div className={TOOLBAR}><button onClick={onChangeView}>Change View</button></div>
+      <nav className="flex bg-brand" role="tablist">
+        {tabs.map(([name], i) => (
+          <button className="bg-transparent border-0 rounded-none px-4 py-2.5 text-[20px] font-bold text-[#d89490] hover:text-white aria-selected:text-white aria-selected:shadow-[inset_0_-3px_#fff]" key={name} role="tab" aria-selected={tab === i} onClick={() => setTab(i)}>{name}</button>
+        ))}
+      </nav>
+      {/* key remounts the tab, so each tab loads fresh data when opened, like the original */}
+      <main className="flex-1 overflow-auto p-3.5" key={tab}>{tabs[tab][1]}</main>
+
+      {dialog && <FormDialog {...dialog} onSubmit={closeDialog} onCancel={() => closeDialog(null)} />}
+      {notice && <Notice key={notice.id} notice={notice} onClose={() => setNotice(null)} />}
+    </div>
+  );
+}

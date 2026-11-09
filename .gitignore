@@ -6,8 +6,8 @@ javafx-sdk-25.0.4/
 .env
 .env.*
 !.env.example
+set-env.ps1
 set-env.sh
-client/
 target/
 
 # Generated SQL data
