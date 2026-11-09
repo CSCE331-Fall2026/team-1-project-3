@@ -5,6 +5,11 @@ import {
 import { api, money, parsePrice, MAX_STOCK } from "./lib.js";
 import { FormDialog, Notice } from "./ui.jsx";
 
+const TOOLBAR = "flex gap-3 items-center px-3.5 py-2";
+const TOOLBAR_TITLE = "text-[20px] font-bold";
+const ROW = "flex gap-2.5 items-center px-2.5 py-[5px] border-b border-[#ddd]";
+const INFO = "flex-1 whitespace-pre-line font-bold text-black";
+
 const LOAD_FAILED = ["Manager Load Failed", "The manager data could not be loaded.",
   "Please check the database connection and try again."];
 
@@ -308,13 +313,13 @@ function MenuTab({ notify, ask }) {
 
   return (
     <>
-      <div className="toolbar">
+      <div className={TOOLBAR}>
         <button disabled={busyId === "add"} onClick={addItem}>Add Menu Item</button>
       </div>
-      <ul className="rows">
+      <ul>
         {items?.map((i) => (
-          <li key={i.itemId} className="row">
-            <span className="info">{`#${i.itemId} ${i.name}:\n- Price: ${money(i.priceCents)}`}</span>
+          <li key={i.itemId} className={ROW}>
+            <span className={INFO}>{`#${i.itemId} ${i.name}:\n- Price: ${money(i.priceCents)}`}</span>
             <button disabled={busyId === i.itemId} onClick={() => editItem(i)}>Edit Item</button>
             <button disabled={busyId === i.itemId} onClick={() => removeItem(i)}>Remove Item</button>
           </li>
@@ -363,10 +368,10 @@ function StockTab({ notify, ask }) {
   }
 
   return (
-    <ul className="rows">
+    <ul>
       {items?.map((i) => (
-        <li key={i.inventoryId} className="row" style={{ background: stockColor(i) }}>
-          <span className="info">
+        <li key={i.inventoryId} className={ROW} style={{ background: stockColor(i) }}>
+          <span className={INFO}>
             {`#${i.inventoryId} ${i.name}:\n- Stock: ${i.stock}\n- Minimum Stock: ${i.minStock}\n- Next Shipment: ${i.nextShipment}\n- Shelf Life: ${i.shelfLife}`}
           </span>
           <button disabled={busyId === i.inventoryId} onClick={() => changeStock(i)}>Change Stock</button>
@@ -410,12 +415,12 @@ function ChartTab({ endpoint, title, rangePrefix, valueLabel, failure, notify, a
 
   return (
     <>
-      <div className="toolbar">
+      <div className={TOOLBAR}>
         <button onClick={changePeriod}>Change Time Period</button>
-        <h2>{chart.title}</h2>
+        <h2 className={TOOLBAR_TITLE}>{chart.title}</h2>
       </div>
       {chart.rows && (
-        <div className="chart" style={{ height: Math.max(320, chart.rows.length * 28 + 80) }}>
+        <div className="w-full" style={{ height: Math.max(320, chart.rows.length * 28 + 80) }}>
           <ResponsiveContainer>
             <BarChart data={chart.rows} layout="vertical" margin={{ left: 16, right: 24, bottom: 16 }}>
               <CartesianGrid strokeDasharray="3 3" horizontal={false} />
@@ -441,15 +446,15 @@ function ReceiptsTab({ notify }) {
     g.items.push(r);
   }
   return (
-    <div className="receipts">
+    <div>
       {receipts.map((g) => (
-        <details key={g.id} name="receipts">
-          <summary>Receipt {g.id}</summary>
+        <details className="border border-[grey] rounded-[10px] mb-1.5 px-3 py-1.5" key={g.id} name="receipts">
+          <summary className="cursor-pointer font-bold">Receipt {g.id}</summary>
           {g.items.map((r, i) => (
-            <p key={i}>{`#${r.itemId} ${r.itemName}    x${r.quantity}    ${money(r.lineTotalCents)}`}</p>
+            <p className="my-1.5" key={i}>{`#${r.itemId} ${r.itemName}    x${r.quantity}    ${money(r.lineTotalCents)}`}</p>
           ))}
-          <p>Total: {money(g.items.reduce((s, r) => s + r.lineTotalCents, 0))}</p>
-          <p className="muted">{g.timestamp}</p>
+          <p className="my-1.5">Total: {money(g.items.reduce((s, r) => s + r.lineTotalCents, 0))}</p>
+          <p className="my-1.5 text-[#666]">{g.timestamp}</p>
         </details>
       ))}
     </div>
@@ -480,9 +485,9 @@ function XReportTab({ notify }) {
   const data = rows?.map((r) => ({ label: `${r.hour}:00`, sales: r.orders, revenueCents: r.revenueCents }));
   return (
     <>
-      <div className="toolbar"><h2>Sales Per Hour</h2></div>
+      <div className={TOOLBAR}><h2 className={TOOLBAR_TITLE}>Sales Per Hour</h2></div>
       {data && (
-        <div className="chart" style={{ height: 420 }}>
+        <div className="w-full" style={{ height: 420 }}>
           <ResponsiveContainer>
             <LineChart data={data} margin={{ left: 8, right: 24, bottom: 24 }}>
               <CartesianGrid strokeDasharray="3 3" />
@@ -491,7 +496,7 @@ function XReportTab({ notify }) {
               <Tooltip content={({ active, payload }) => {
                 const p = active && payload?.[0]?.payload;
                 return p ? (
-                  <div className="tip"><strong>{p.label}</strong><br />Sales: {p.sales}<br />Revenue: {money(p.revenueCents)}</div>
+                  <div className="bg-white border border-[grey] px-2.5 py-1.5"><strong>{p.label}</strong><br />Sales: {p.sales}<br />Revenue: {money(p.revenueCents)}</div>
                 ) : null;
               }} />
               <Line type="monotone" dataKey="sales" stroke="#D61927" strokeWidth={2} />
@@ -528,15 +533,15 @@ export default function Manager({ onChangeView }) {
   ];
 
   return (
-    <div className="manager">
-      <div className="toolbar"><button onClick={onChangeView}>Change View</button></div>
-      <nav className="tabs" role="tablist">
+    <div className="h-screen flex flex-col">
+      <div className={TOOLBAR}><button onClick={onChangeView}>Change View</button></div>
+      <nav className="flex bg-brand" role="tablist">
         {tabs.map(([name], i) => (
-          <button key={name} role="tab" aria-selected={tab === i} onClick={() => setTab(i)}>{name}</button>
+          <button className="bg-transparent border-0 rounded-none px-4 py-2.5 text-[20px] font-bold text-[#d89490] hover:text-white aria-selected:text-white aria-selected:shadow-[inset_0_-3px_#fff]" key={name} role="tab" aria-selected={tab === i} onClick={() => setTab(i)}>{name}</button>
         ))}
       </nav>
       {/* key remounts the tab, so each tab loads fresh data when opened, like the original */}
-      <main key={tab}>{tabs[tab][1]}</main>
+      <main className="flex-1 overflow-auto p-3.5" key={tab}>{tabs[tab][1]}</main>
 
       {dialog && <FormDialog {...dialog} onSubmit={closeDialog} onCancel={() => closeDialog(null)} />}
       {notice && <Notice key={notice.id} notice={notice} onClose={() => setNotice(null)} />}

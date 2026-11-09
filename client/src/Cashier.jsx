@@ -8,6 +8,10 @@ import { Notice } from "./ui.jsx";
 const LOCATION_ID = 1; // TODO: take from login/session instead of constants
 const USER_ID = 3;
 
+const COL = "flex flex-col gap-[5px] border border-[grey] p-[15px] overflow-auto min-w-0";
+const COL_TITLE = "p-2.5 text-[22px] text-center font-bold";
+const SELECTED = "border-2 border-brand font-bold";
+
 export default function Cashier({ onChangeView }) {
   const [menu, setMenu] = useState([]);
   const [menuStatus, setMenuStatus] = useState("loading"); // loading | ready | error
@@ -115,10 +119,10 @@ export default function Cashier({ onChangeView }) {
   };
 
   const column = (category, label) => (
-    <section className="col">
-      <h3>{label}</h3>
+    <section className={COL}>
+      <h3 className={COL_TITLE}>{label}</h3>
       {menu.filter((r) => r.categoryId === category).map((r) => (
-        <button key={r.itemId} className={isSelected(r) ? "selected" : ""} onClick={() => pressMenuItem(r)}>
+        <button key={r.itemId} className={isSelected(r) ? SELECTED : ""} onClick={() => pressMenuItem(r)}>
           {r.name}
         </button>
       ))}
@@ -126,14 +130,14 @@ export default function Cashier({ onChangeView }) {
   );
 
   return (
-    <div className="cashier">
+    <div className="flex flex-col items-center gap-2 h-screen p-2 [&_button]:text-[20px] [&_button]:min-h-[30px]">
       <button onClick={onChangeView}>Change View</button>
 
-      <div className="cashier-body">
-        <section className="col">
-          <h3>Size</h3>
+      <div className="grid grid-cols-[repeat(4,1fr)_300px] w-full flex-1 min-h-0">
+        <section className={COL}>
+          <h3 className={COL_TITLE}>Size</h3>
           {Object.entries(MEAL_SIZES).map(([size, { label }]) => (
-            <button key={size} className={selectedSize === size ? "selected" : ""} onClick={() => selectSize(size)}>
+            <button key={size} className={selectedSize === size ? SELECTED : ""} onClick={() => selectSize(size)}>
               {label}
             </button>
           ))}
@@ -146,12 +150,12 @@ export default function Cashier({ onChangeView }) {
           {column(CATEGORY.DRINK, "Drinks")}
         </fieldset>
 
-        <aside className="cart">
-          <fieldset className="col cart-lines" disabled={locked}>
+        <aside className="flex flex-col gap-[5px] min-h-0">
+          <fieldset className={`${COL} flex-1 items-stretch`} disabled={locked}>
             {cartLines.map((line) => (
-              <div className="cart-row" key={line.id}>
+              <div className="flex gap-[5px] items-center" key={line.id}>
                 {/* Unchecking removes the line, as in the original */}
-                <label>
+                <label className="flex-1 text-[20px]">
                   <input type="checkbox" checked onChange={() => removeLine(line.id)} />
                   {describeLine(line)}
                 </label>
@@ -159,7 +163,7 @@ export default function Cashier({ onChangeView }) {
                 <button onClick={() => changeQuantity(line.id, 1)}>+</button>
               </div>
             ))}
-            {menuStatus === "ready" && <p className="total">Total Price: {money(total)}</p>}
+            {menuStatus === "ready" && <p className="mt-2.5 text-[22px] font-bold">Total Price: {money(total)}</p>}
           </fieldset>
           <button disabled={locked || menuStatus === "loading" || !cartLines.length} onClick={confirmCheckout}>
             Checkout
