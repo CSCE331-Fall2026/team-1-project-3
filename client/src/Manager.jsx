@@ -29,23 +29,89 @@ function MenuTab({ notify, ask }) {
   const { data: items, setData, reload } = useApi("/manager/menu", notify);
   const [busyId, setBusyId] = useState(null);
 
-  async function changePrice(item) {
-    const v = await ask({
-      title: "Change Price", header: "Enter the new price:", fields: [{ name: "price", label: "Price:" }],
-    });
-    if (!v) return;
-    const cents = parsePrice(v.price);
-    if (cents === null)
-      return dbError(notify, "update price", "Enter a price from 0.00 to 99999999.99 with at most two decimal places.");
-    setBusyId(item.itemId);
+  async function editItem(item) { 
+    //current item details (prefill)
+    const currentItemId = item.itemId;
+    const currentCategoryId = item.categoryId;
+    const currentPrice = item.priceCents ? (item.priceCents / 100).toFixed(2) : "";
+    const currentUnitSize = item.unitSize || "";
+    const currentName = item.name || "";
+    const currentNutrition = item.nutrition || "";
+
+    //ingredient retrieval
+    let ingredients = [];
     try {
-      const r = await api(`/manager/menu/${item.itemId}/price`, { method: "PATCH", body: { priceCents: cents } });
-      setData((list) => list.map((i) => (i.itemId === item.itemId ? { ...i, priceCents: r.priceCents } : i)));
-    } catch (err) {
-      dbError(notify, "update price",
-        err.status === 404 ? "The price value could not be updated." : "The database update failed.");
-    } finally {
-      setBusyId(null);
+      const res = await api("/manager/inventory", { method: "GET" });
+      ingredients = res?.inventory || [];
+    } catch {
+      notify("Error", "Failed to load ingredients", "Could not get ingredient list.");
+      return;
+    }
+
+    //current ingredient IDs for this menu item
+    let currentIngredientIds = [];
+    try {
+      const res = await api(`/manager/menu/${currentItemId}/ingredients`, { method: "GET" });
+      currentIngredientIds = res?.ingredientIds || [];
+      console.log("Current ingredient IDs for item", currentItemId, ":", currentIngredientIds);
+    } catch {
+      // If no endpoint exists, skip ingredient loading
+      console.warn("Could not load current ingredients for item", currentItemId);
+    }
+
+    //Prefilling
+    const v = await ask({
+      title: "Edit Menu Item",
+      header: "Edit details for: " + currentName,
+      submitLabel: "Next: Select Ingredients",
+      fields: [
+        { name: "itemId", label: "Item ID:", defaultValue: currentItemId },
+        { name: "categoryId", label: <span>Category ID<br />(1 - entree,<br />2 - appetizer,<br />3 - drink):</span>, defaultValue: currentCategoryId },
+        { name: "nutrition", label: "Nutrition Info:", defaultValue: currentNutrition },
+        { name: "price", label: "Item Price:", defaultValue: currentPrice },
+        { name: "unitSize", label: "Unit Size:", defaultValue: currentUnitSize },
+        { name: "name", label: "Item Name:", defaultValue: currentName },
+      ],
+    });
+
+    if (!v) return;
+
+    //validate input
+    const priceCents = parsePrice(v.price);
+    if (
+      !/^\d+$/.test(v.itemId.trim()) ||
+      !/^\d+$/.test(v.categoryId.trim()) ||
+      priceCents === null
+    ) {
+      return notify("Input Error", "Invalid Input",
+        "Please provide valid item and category numbers and a price from 0.00 to 99999999.99 (max two decimals).");
+    }
+
+    //show ingredient selection prechecked
+    const selectedIngredientIds = await showIngredientDialog(ingredients, currentIngredientIds);
+    if (selectedIngredientIds === null) return;
+
+    //update
+    setBusyId("edit");
+    try {
+      const { updated } = await api(`/manager/menu/${currentItemId}`, {
+        method: "PUT",
+        body: {
+          itemId: Number(v.itemId),
+          categoryId: Number(v.categoryId),
+          nutrition: v.nutrition,
+          priceCents,
+          unitSize: v.unitSize,
+          name: v.name,
+          ingredientIds: selectedIngredientIds,
+        },
+      });
+      if (updated) reload();
+      } catch (e) {
+        console.error("Error updating menu item:", e);
+        dbError(notify, "edit menu item", "The menu item was not updated.");
+      } finally {
+        setBusyId(null);
     }
   }
 
@@ -63,34 +129,181 @@ function MenuTab({ notify, ask }) {
   }
 
   async function addItem() {
+    //get ingredients
+    let ingredients = [];
+    try {
+      const res = await api("/manager/inventory", { method: "GET" });
+      ingredients = res?.inventory || [];
+    } catch {
+      notify("Error", "Failed to load ingredients", "Could not get ingredient list.");
+      return;
+    }
+
+    //Main item details
     const v = await ask({
-      title: "Add Menu Item", header: "Enter the details for the new menu item:", submitLabel: "Add",
+      title: "Add Menu Item",
+      header: "Enter the details for the new menu item:",
+      submitLabel: "Next: Select Ingredients",
       fields: [
-        { name: "itemId", label: "Item ID:" }, { name: "categoryId", label: "Category ID:" },
-        { name: "nutrition", label: "Nutrition Info:" }, { name: "price", label: "Item Price:" },
-        { name: "unitSize", label: "Unit Size:" }, { name: "name", label: "Item Name:" },
+        { name: "itemId", label: "Item ID:" },
+        { name: "categoryId", label: <span>Category ID<br />(1 - entree,<br />2 - appetizer,<br />3 - drink):</span> },
+        { name: "nutrition", label: "Nutrition Info:" },
+        { name: "price", label: "Item Price:" },
+        { name: "unitSize", label: "Unit Size:" },
+        { name: "name", label: "Item Name:" },
       ],
     });
+
     if (!v) return;
+
+    //validate input
     const priceCents = parsePrice(v.price);
-    if (!/^\d+$/.test(v.itemId.trim()) || !/^\d+$/.test(v.categoryId.trim()) || priceCents === null)
+    if (
+      !/^\d+$/.test(v.itemId.trim()) ||
+      !/^\d+$/.test(v.categoryId.trim()) ||
+      priceCents === null
+    ) {
       return notify("Input Error", "Invalid Input",
         "Please provide valid item and category numbers and a price from 0.00 to 99999999.99 (max two decimals).");
+    }
+
+    //show ingredient selection
+    const selectedIngredientIds = await showIngredientDialog(ingredients);
+    if (selectedIngredientIds === null) return;
+
+    //submit new menu item
     setBusyId("add");
     try {
       const { added } = await api("/manager/menu", {
         method: "POST",
         body: {
-          itemId: Number(v.itemId), categoryId: Number(v.categoryId), nutrition: v.nutrition,
-          priceCents, unitSize: v.unitSize, name: v.name,
+          itemId: Number(v.itemId),
+          categoryId: Number(v.categoryId),
+          nutrition: v.nutrition,
+          priceCents,
+          unitSize: v.unitSize,
+          name: v.name,
+          ingredientIds: selectedIngredientIds,
         },
       });
       if (added) reload();
-    } catch {
+    } catch (e) {
+      console.error("Error adding menu item:", e);
       dbError(notify, "add menu item", "The menu item was not added.");
     } finally {
       setBusyId(null);
     }
+  }
+
+  async function showIngredientDialog(ingredients, preCheckedIds = []) {
+    return new Promise((resolve) => {
+      const selected = new Set(preCheckedIds);
+
+      const modal = document.createElement('div');
+      modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.6);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+      `;
+
+      const content = document.createElement('div');
+      content.style.cssText = `
+        background: white;
+        padding: 24px;
+        border-radius: 8px;
+        max-width: 500px;
+        max-height: 80vh;
+        overflow-y: auto;
+      `;
+
+      const title = document.createElement('h3');
+      title.textContent = 'Select Ingredients:';
+      title.style.marginTop = '0';
+      content.appendChild(title);
+
+      const list = document.createElement('div');
+      list.style.margin = '16px 0';
+
+      ingredients.forEach((ing) => {
+        const label = document.createElement('label');
+        label.style.cssText = `
+          display: block;
+          padding: 8px 0;
+          cursor: pointer;
+          border-bottom: 1px solid #eee;
+        `;
+
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.dataset.invId = ing.inventoryId;
+        checkbox.style.marginRight = '8px';
+
+        const invId = Number(ing.inventoryId);
+        if (preCheckedIds.includes(invId)) {
+          checkbox.checked = true;
+        }
+
+        checkbox.addEventListener('change', () => {
+          i = Number(checkbox.dataset.invId);
+          if (checkbox.checked) {
+            selected.add(invId);
+          } else {
+            selected.delete(invId);
+          }
+        });
+
+        const text = document.createTextNode(ing.name);
+        label.appendChild(checkbox);
+        label.appendChild(text);
+        list.appendChild(label);
+      });
+
+      content.appendChild(list);
+
+      const buttons = document.createElement('div');
+      buttons.style.cssText = `
+        margin-top: 16px;
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+      `;
+
+      const cancelBtn = document.createElement('button');
+      cancelBtn.textContent = 'Cancel';
+      cancelBtn.addEventListener('click', () => {
+        modal.remove();
+        resolve(null);
+      });
+
+      const confirmBtn = document.createElement('button');
+      confirmBtn.textContent = 'Confirm';
+      confirmBtn.addEventListener('click', () => {
+        modal.remove();
+        console.log("Selected ingredients:", Array.from(selected));
+        resolve(Array.from(selected));
+      });
+
+      buttons.appendChild(cancelBtn);
+      buttons.appendChild(confirmBtn);
+      content.appendChild(buttons);
+
+      modal.appendChild(content);
+      document.body.appendChild(modal);
+
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+          modal.remove();
+          resolve(null);
+        }
+      });
+    });
   }
 
   return (
@@ -102,7 +315,7 @@ function MenuTab({ notify, ask }) {
         {items?.map((i) => (
           <li key={i.itemId} className="row">
             <span className="info">{`#${i.itemId} ${i.name}:\n- Price: ${money(i.priceCents)}`}</span>
-            <button disabled={busyId === i.itemId} onClick={() => changePrice(i)}>Change Price</button>
+            <button disabled={busyId === i.itemId} onClick={() => editItem(i)}>Edit Item</button>
             <button disabled={busyId === i.itemId} onClick={() => removeItem(i)}>Remove Item</button>
           </li>
         ))}

@@ -1,4 +1,4 @@
-package backend.api;
+package backend.api; 
 
 import backend.api.Dtos.MenuItem;
 import backend.api.Dtos.NewMenuItem;
@@ -18,10 +18,12 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import backend.models.InventoryRecord;
 
 import java.util.List;
 import java.util.Map;
@@ -46,8 +48,41 @@ public class ManagerApi {
                 || body.name() == null || body.name().isBlank())
             return invalid("Invalid menu item");
         boolean added = repository.addMenuItem(body.itemId(), body.categoryId(), orEmpty(body.nutrition()),
-                Money.fromCents(body.priceCents()), orEmpty(body.unitSize()), body.name());
+                Money.fromCents(body.priceCents()), orEmpty(body.unitSize()), body.name(), body.ingredientIds());
+
         return ResponseEntity.status(201).body(Map.of("added", added));
+    }
+
+    @GetMapping("/inventory")
+    public ResponseEntity<?> getInventory() throws Exception {
+        List<InventoryRecord> inventory = repository.loadInventory();
+        return ResponseEntity.ok(Map.of("inventory", inventory));
+    }
+
+    @GetMapping("/menu/{itemId}/ingredients")
+    public ResponseEntity<?> getItemIngredients(@PathVariable int itemId) throws Exception {
+        List<Integer> ingredientIds = repository.getItemIngredients(itemId);
+        return ResponseEntity.ok(Map.of("ingredientIds", ingredientIds));
+    }
+
+    @PutMapping("/menu/{itemId}")
+    public ResponseEntity<?> updateMenuItem(@PathVariable int itemId, @RequestBody NewMenuItem body) throws Exception {
+        if (body.itemId() == null || body.categoryId() == null || !Money.valid(body.priceCents())
+                || body.name() == null || body.name().isBlank())
+            return invalid("Invalid menu item");
+
+        boolean updated = repository.updateMenuItem(
+            itemId,
+            body.itemId(),
+            body.categoryId(),
+            orEmpty(body.nutrition()),
+            Money.fromCents(body.priceCents()),
+            orEmpty(body.unitSize()),
+            body.name(),
+            body.ingredientIds()
+        );
+
+        return ResponseEntity.ok(Map.of("updated", updated));
     }
 
     @PatchMapping("/menu/{id}/price")
