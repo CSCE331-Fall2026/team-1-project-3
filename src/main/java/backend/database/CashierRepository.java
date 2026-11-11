@@ -14,7 +14,9 @@ import java.util.List;
 /** Handles cashier menu reads and checkout transactions. */
 public final class CashierRepository {
     public enum CheckoutOutcome {
-        SUCCESS, FAILURE, UNCERTAIN
+        SUCCESS, FAILURE, UNCERTAIN,
+        /** Totals break the pricing rules in {@link CheckoutPricing}; nothing was written. */
+        REJECTED
     }
 
     public List<MenuRecord> loadMenu() throws Exception {
@@ -40,6 +42,10 @@ public final class CashierRepository {
         return menu;
     }
 
+    private static long toCents(BigDecimal dollars) {
+        return dollars.movePointRight(2).longValueExact(); // throws on fractional cents, which fails the checkout
+    }
+
     public CheckoutOutcome checkout(int locationId, int userId,
             TreeMap<Integer, Integer> checkoutCart,
             TreeMap<Integer, BigDecimal> checkoutPrices,
@@ -52,9 +58,9 @@ public final class CashierRepository {
                 try (PreparedStatement receipt = connection.prepareStatement(
                         "INSERT INTO receipt (location_id, user_id, receipt_timestamp) VALUES (?, ?, DATE_TRUNC('second', CURRENT_TIMESTAMP)) RETURNING receipt_id");
                         PreparedStatement itemValidation = connection.prepareStatement(
-                                "SELECT i.active, COUNT(il.inventory_id) AS ingredient_count "
+                                "SELECT i.active, i.price, i.category_id, COUNT(il.inventory_id) AS ingredient_count "
                                         + "FROM item i LEFT JOIN ingredient_list il ON il.item_id = i.item_id "
-                                        + "WHERE i.item_id = ? GROUP BY i.active");
+                                        + "WHERE i.item_id = ? GROUP BY i.active, i.price, i.category_id");
                         PreparedStatement ingredients = connection.prepareStatement(
                                 "SELECT inventory_id FROM ingredient_list WHERE item_id = ? ORDER BY inventory_id FOR SHARE");
                         PreparedStatement update = connection.prepareStatement(
@@ -63,16 +69,26 @@ public final class CashierRepository {
                                 "INSERT INTO receipt_item (receipt_id, item_id, quantity, price_at_sale) "
                                         + "SELECT ?, item_id, ?, ? FROM item "
                                         + "WHERE item_id = ? AND active = TRUE AND price = ?")) {
-                    for (Integer itemId : checkoutCart.keySet()) {
+                    List<CheckoutPricing.Line> pricedLines = new ArrayList<>();
+                    for (Map.Entry<Integer, Integer> entry : checkoutCart.entrySet()) {
+                        int itemId = entry.getKey();
                         itemValidation.setInt(1, itemId);
                         try (ResultSet results = itemValidation.executeQuery()) {
                             if (!results.next() || !results.getBoolean("active")
                                     || results.getInt("ingredient_count") == 0) {
                                 throw new SQLException("Item is unavailable or has no ingredient mapping: " + itemId);
                             }
+                            if (!checkoutPrices.containsKey(itemId) || !checkoutTotals.containsKey(itemId))
+                                throw new SQLException("Price snapshot is missing for item " + itemId);
+                            // Database price, not the client's; the receipt_item insert below still requires them equal.
+                            pricedLines.add(new CheckoutPricing.Line(results.getInt("category_id"),
+                                    toCents(results.getBigDecimal("price")), entry.getValue(),
+                                    toCents(checkoutTotals.get(itemId))));
                         }
-                        if (!checkoutPrices.containsKey(itemId))
-                            throw new SQLException("Price snapshot is missing for item " + itemId);
+                    }
+                    if (!CheckoutPricing.valid(pricedLines)) {
+                        connection.rollback();
+                        return CheckoutOutcome.REJECTED;
                     }
                     receipt.setInt(1, locationId);
                     receipt.setInt(2, userId);
