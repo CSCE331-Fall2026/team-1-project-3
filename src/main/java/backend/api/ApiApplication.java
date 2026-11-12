@@ -1,6 +1,7 @@
 package backend.api;
 
 import backend.config.DbSetup;
+import backend.database.DatabaseConnection;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
@@ -17,6 +18,7 @@ public class ApiApplication {
             System.err.println("Cannot start: " + e.getMessage());
             System.exit(1);
         }
+        DatabaseConnection.start(); // the first connection opens in the background while Spring boots
         SpringApplication.run(ApiApplication.class, args);
     }
 }

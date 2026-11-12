@@ -58,7 +58,7 @@ public final class ManagerRepository {
         return ingredientIds;
     }
 
-    public List<InventoryRecord> loadInventory() throws SQLException {
+    public List<InventoryRecord> loadInventory() throws Exception {
         List<InventoryRecord> inventory = new ArrayList<>();
         try (Connection connection = DatabaseConnection.open();
             PreparedStatement statement = connection.prepareStatement(
@@ -78,12 +78,7 @@ public final class ManagerRepository {
                     ));
                 }
             }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
         }
-        
         return inventory;
     }
 
@@ -273,7 +268,7 @@ public final class ManagerRepository {
         }
     }
 
-    public List<Integer> getItemIngredients(int itemId) throws SQLException {
+    public List<Integer> getItemIngredients(int itemId) throws Exception {
         List<Integer> ingredientIds = new ArrayList<>();
         try (Connection conn = DatabaseConnection.open();
             PreparedStatement stmt = conn.prepareStatement(
@@ -285,11 +280,6 @@ public final class ManagerRepository {
                 }
             }
         }
-        catch (SQLException e) {
-            e.printStackTrace();
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        }
         return ingredientIds;
     }
 
@@ -299,6 +289,14 @@ public final class ManagerRepository {
         try (Connection connection = DatabaseConnection.open()) {
             connection.setAutoCommit(false);
             try {
+                // Clear the recipe before the ID changes: ingredient_list.item_id is ON UPDATE CASCADE,
+                // so rows left in place would follow the item to newItemId and collide with the re-insert.
+                try (PreparedStatement stmt = connection.prepareStatement(
+                        "DELETE FROM ingredient_list WHERE item_id = ?")) {
+                    stmt.setInt(1, itemId);
+                    stmt.executeUpdate();
+                }
+
                 // Update item details
                 try (PreparedStatement stmt = connection.prepareStatement(
                         "UPDATE item SET item_id = ?, category_id = ?, nutrition = ?, price = ?, unit_size = ?, name = ? "
@@ -314,13 +312,6 @@ public final class ManagerRepository {
                         connection.rollback();
                         return false;
                     }
-                }
-
-                // Delete existing ingredients
-                try (PreparedStatement stmt = connection.prepareStatement(
-                        "DELETE FROM ingredient_list WHERE item_id = ?")) {
-                    stmt.setInt(1, itemId);
-                    stmt.executeUpdate();
                 }
 
                 // Insert new ingredients

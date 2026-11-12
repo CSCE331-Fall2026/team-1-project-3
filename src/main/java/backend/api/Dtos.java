@@ -17,6 +17,15 @@ public final class Dtos {
         }
     }
 
+    /** Manager view of a menu item: the cashier fields plus what the edit dialog needs to round-trip. */
+    public record ManagerMenuItem(int itemId, String name, long priceCents, int categoryId, String nutrition,
+            String unitSize) {
+        public static ManagerMenuItem of(MenuRecord r) {
+            return new ManagerMenuItem(r.getItemID(), r.getName(), Money.toCents(r.getPrice()), r.getCategoryID(),
+                    r.getNutrition(), r.getUnitSize());
+        }
+    }
+
     public record Stock(int inventoryId, String name, int stock, int minStock, String nextShipment, String shelfLife) {
         public static Stock of(StockRecord r) {
             return new Stock(r.getInventoryID(), r.getName(), r.getStock(), r.getMinStock(),
