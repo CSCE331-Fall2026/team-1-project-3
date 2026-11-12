@@ -26,12 +26,14 @@
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-web</artifactId>
     </dependency>
+    
     <!-- HikariCP finds the driver from the JDBC URL, so runtime scope is enough. -->
     <dependency>
       <groupId>org.postgresql</groupId>
       <artifactId>postgresql</artifactId>
       <scope>runtime</scope>
     </dependency>
+    
     <!-- Version managed by the Spring Boot parent. -->
     <dependency>
       <groupId>com.zaxxer</groupId>
@@ -45,12 +47,21 @@
       <scope>test</scope>
     </dependency>
     
+    <!-- Throwaway local PostgreSQL for checkout tests, so they never touch the shared team database. -->
+    <dependency>
+      <groupId>io.zonky.test</groupId>
+      <artifactId>embedded-postgres</artifactId>
+      <version>2.1.0</version>
+      <scope>test</scope>
+    </dependency>
+    
     <!-- In-memory stand-in for PostgreSQL so repository tests never touch the shared team database. -->
     <dependency>
       <groupId>com.h2database</groupId>
       <artifactId>h2</artifactId>
       <scope>test</scope>
     </dependency>
+    
   </dependencies>
 
   <build>

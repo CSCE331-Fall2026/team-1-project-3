@@ -48,6 +48,7 @@ public class CashierApi {
 
         CheckoutOutcome outcome = repository.checkout(request.locationId(), request.userId(),
                 quantities, listPrices, totals);
+        if (outcome == CheckoutOutcome.REJECTED) return rejected();
         return ResponseEntity.ok(Map.of("outcome", outcome.name())); // SUCCESS | FAILURE | UNCERTAIN
     }
 
