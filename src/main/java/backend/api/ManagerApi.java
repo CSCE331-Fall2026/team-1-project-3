@@ -1,6 +1,6 @@
 package backend.api; 
 
-import backend.api.Dtos.MenuItem;
+import backend.api.Dtos.ManagerMenuItem;
 import backend.api.Dtos.NewMenuItem;
 import backend.api.Dtos.Point;
 import backend.api.Dtos.PriceChange;
@@ -38,8 +38,8 @@ public class ManagerApi {
     /* ---- Menu items ---- */
 
     @GetMapping("/menu")
-    public List<MenuItem> menu() throws Exception {
-        return repository.loadDashboard().getMenu().stream().map(MenuItem::of).toList();
+    public List<ManagerMenuItem> menu() throws Exception {
+        return repository.loadDashboard().getMenu().stream().map(ManagerMenuItem::of).toList();
     }
 
     @PostMapping("/menu")

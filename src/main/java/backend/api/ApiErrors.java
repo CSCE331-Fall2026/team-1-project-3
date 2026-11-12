@@ -24,7 +24,7 @@ public class ApiErrors {
                 log.warn("Rejected date input: {}", s.getMessage());
                 return ResponseEntity.badRequest().body(Map.of("error", "Invalid date or time"));
             }
-            // 23505 unique_violation: today only addMenuItem can reach here with it (checkout catches its own).
+            // 23505 unique_violation: addMenuItem or updateMenuItem reusing a taken ID (checkout catches its own).
             if ("23505".equals(state)) {
                 log.warn("Rejected duplicate key: {}", s.getMessage());
                 return ResponseEntity.status(409).body(Map.of("error", "That ID already exists"));
