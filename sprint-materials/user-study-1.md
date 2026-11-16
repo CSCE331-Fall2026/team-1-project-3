@@ -20,14 +20,14 @@
 ## Participant Results & Observations
 
 ### Participant A – Cashier (session run by: Pablo Almanza)
-- Likert ratings:
-- Notable quotes:
-- Observed behavior (hesitations, errors, friction):
+- Likert ratings: Agree, Neutral, Agree, Agree
+- Notable quotes: “Why is it that I have to scroll to see everything on the screen”
+- Observed behavior (hesitations, errors, friction): Completed checkout with a bit of difficulty. The participant requested a more detailed receipt showing the actual contents of each meal and how each selection contributed to the total.
 
 ## Proposed Design Moves (prioritized)
 | Priority | Proposed change | Evidence / justification | Sprint impact |
 |----------|-----------------|--------------------------|---------------|
-| 1 | | | |
+| 5 | Allow editing existing cart items | The participant could not change an entree in a plate already added to the cart and identified modifying the current cart as a major issue | Medium sprint impact, requiring changes to cart editing and meal selection behavior. |
 
 ### Participant B – Manager (session run by: Ashley Hoang)
 - Likert ratings: Strongly Agree, Agree, Strongly Agree, Agree
