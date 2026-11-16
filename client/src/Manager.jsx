@@ -341,7 +341,7 @@ function StockTab({ notify, ask }) {
 
   async function changeStock(item) {
     const v = await ask({
-      title: "Change Stock", header: "Enter the change in stock (add a '-' if decreasing stock):",
+      title: "Add/Subtract Stock", header: "Enter the change in stock (add a '-' if decreasing stock):",
       fields: [{ name: "delta", label: "Change in stock:" }],
     });
     if (!v) return;
