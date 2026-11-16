@@ -78,6 +78,11 @@ export default function Customer({ onChangeView }) {
   const selectSize = (size) => {
     setSelectedSize((cur) => (cur === size ? null : size));
     resetPending();
+    <fieldset className="contents" disabled={locked}>
+      {grid(CATEGORY.MAIN, "Mains", mainsRef)}
+      {grid(CATEGORY.SIDE, "Sides", sidesRef)}
+      {grid(CATEGORY.DRINK, "Drinks", drinksRef)}
+    </fieldset>
   };
 
 
@@ -91,6 +96,16 @@ export default function Customer({ onChangeView }) {
 
   const pressMenuItem = (record) => {
     if (!selectedSize || record.categoryId === CATEGORY.DRINK) return addToCart(singleLine(record));
+
+    if (isSelected(record)){
+      if (record.categoryId === CATEGORY.MAIN){
+        setPendingMains((cur) => cur.filter((m) => m.itemId !== record.itemId));
+      } else {
+        setPendingSide(null);
+      }
+      return
+    }
+
     const needed = MEAL_SIZES[selectedSize].mains;
     let mains = pendingMains;
     let side = pendingSide;
