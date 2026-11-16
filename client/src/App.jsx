@@ -4,9 +4,22 @@ import Manager from "./Manager.jsx";
 import Customer from "./Customer.jsx"
 import Login from "./Login.jsx";
 
-// Replaces DatabaseApp + the two changeView() methods that swapped FXML scenes.
+// Which views each role can open, anyone can use customer view
+const ALLOWED_VIEWS = {
+  Manager: ["manager", "cashier", "customer"],
+  Cashier: ["cashier", "customer"],
+};
+
+// Replaces DatabaseApp + the two changeView() methods that swapped scenes
 export default function App() {
   const [view, setView] = useState("customer");
+  const [previousView, setPreviousView] = useState("customer");
+  const [user, setUser] = useState(null);
+  let allowedViews = ["customer"];
+  if (user && ALLOWED_VIEWS[user.perms] != null) {
+    allowedViews = ALLOWED_VIEWS[user.perms];
+  }
+
   useEffect(() => {
     if (view === "customer") {
       document.title = "Customer View";
@@ -20,18 +33,42 @@ export default function App() {
     else {
       document.title = "Manager View";
     }
-    // document.title = view === "customer" ? "Customer View" : "Cashier View";
   }, [view]);
+
+  const openLogin = () => {
+    setPreviousView(view);
+    setView("login");
+  };
+
+  const logout = () => {
+    setUser(null);
+    setView("customer");
+  };
+  
+  //temporary "authentication" while I finalize how we will prevent people accessing stuff they shouldnt be able to
+  if (view !== "login" && !allowedViews.includes(view)) {
+    return (<Customer onChangeView={openLogin} />);
+  }
+
   if (view === "customer"){
-    return (<Customer onChangeView={() => setView("login")} />);
+    return (<Customer onChangeView={openLogin} />);
   }
   else if (view === "login") {
-    return (<Login />);
+    return (
+      <Login
+        user={user}
+        allowedViews={allowedViews}
+        onLogin={setUser}
+        onPick={setView}
+        onLogout={logout}
+        onBack={() => setView(previousView)}
+      />
+    );
   }
   else if (view === "cashier") {
-    return (<Cashier onChangeView={() => setView("login")} />)
+    return (<Cashier onChangeView={openLogin} />)
   }
   else {
-    return (<Manager onChangeView={() => setView("login")}/>)
+    return (<Manager onChangeView={openLogin}/>)
   }
 }
