@@ -27,7 +27,7 @@ A publicly hosted web application for Panda Express that allows customers to ord
 - **Back-end:** Java/JDBC
 - **Database:** PostgreSQL on AWS
 - **Hosting service:** Render (app), Cloudflare (docs)
-- **Authentication:** Google Authenticator
+- **Authentication:** OAuth
 
 
 
