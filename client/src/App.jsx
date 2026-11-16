@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import Cashier from "./Cashier.jsx";
 import Manager from "./Manager.jsx";
 import Customer from "./Customer.jsx"
+import Login from "./Login.jsx";
 
 // Replaces DatabaseApp + the two changeView() methods that swapped FXML scenes.
 export default function App() {
@@ -9,6 +10,9 @@ export default function App() {
   useEffect(() => {
     if (view === "customer") {
       document.title = "Customer View";
+    }
+    else if (view === "login") {
+      document.title = "Login";
     }
     else if (view === "cashier") {
       document.title = "Cashier View";
@@ -19,12 +23,15 @@ export default function App() {
     // document.title = view === "customer" ? "Customer View" : "Cashier View";
   }, [view]);
   if (view === "customer"){
-    return (<Customer onChangeView={() => setView("cashier")} />);
+    return (<Customer onChangeView={() => setView("login")} />);
+  }
+  else if (view === "login") {
+    return (<Login />);
   }
   else if (view === "cashier") {
-    return (<Cashier onChangeView={() => setView("manager")} />)
+    return (<Cashier onChangeView={() => setView("login")} />)
   }
   else {
-    return (<Manager onChangeView={() => setView("customer")}/>)
+    return (<Manager onChangeView={() => setView("login")}/>)
   }
 }
