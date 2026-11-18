@@ -1362,15 +1362,6 @@ allItems[27] = std::make_unique<Item>(
 allItems[28] = std::unique_ptr<Item>(new Item(
     29,
     ItemCategory::ENTREE,
-    "Calories: 460\nTotal Fat: 24g\nSaturated Fat: 8g\nTrans Fat: 0g\nCholesterol: 90mg\nSodium: 1,040mg\nTotal Carbohydrate: 29g\nDietary Fiber: 2g\nTotal Sugars: 22g\nProtein: 24g",
-    10.00,
-    "Cantonese BBQ Brisket",
-    {6, 2},
-    {8, 10}));
-
-allItems[29] = std::unique_ptr<Item>(new Item(
-    30,
-    ItemCategory::ENTREE,
     "Calories: 490\nTotal Fat: 23g\nSaturated Fat: 4.5g\nTrans Fat: 0g\nCholesterol: 80mg\nSodium: 820mg\nTotal Carbohydrate: 51g\nDietary Fiber: 2g\nTotal Sugars: 19g\nProtein: 25g",
     10.00,
     "Hot Orange Chicken",
