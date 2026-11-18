@@ -156,8 +156,7 @@ public final class ManagerRepository {
             try (ResultSet results = statement.executeQuery()) {
                 while (results.next())
                     points.add(new GraphPoint(results.getInt("numSold"),
-                            "#" + results.getInt("item_id") + "-" + results.getString("itemNames") + ' '
-                                    + results.getInt("numSold")));
+                            "#" + results.getInt("item_id") + "-" + results.getString("itemNames")));
             }
         }
         return points;
@@ -201,8 +200,7 @@ public final class ManagerRepository {
             try (ResultSet results = statement.executeQuery()) {
                 while (results.next())
                     points.add(new GraphPoint(results.getInt("stockUsed"),
-                            "#" + results.getInt("inventory_id") + "-" + results.getString("inventoryNames") + ' '
-                                    + results.getInt("stockUsed")));
+                            "#" + results.getInt("inventory_id") + "-" + results.getString("inventoryNames")));
             }
         }
         return points;

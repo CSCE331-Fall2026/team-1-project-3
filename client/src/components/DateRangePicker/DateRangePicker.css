@@ -1,0 +1,108 @@
+/*CSS for date pickers (Manager graphs)*/
+
+
+.react-aria-DateRangePicker {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    color: #333;
+    font-size: 15px;
+    margin-left: 10px;
+}
+
+.dateRangeGroup {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 280px;
+    height: 38px;
+    padding: 0 10px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    background: white;
+}
+
+.dateRangeGroup[data-focus-within] {
+    outline: 2px solid #D61927;
+    outline-offset: 1px;
+}
+
+.dateFields {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex: 1;
+}
+
+.react-aria-DateInput {
+    display: flex;
+    align-items: center;
+}
+
+.react-aria-DateSegment {
+    padding: 2px;
+    outline: none;
+}
+
+.react-aria-DateSegment[data-focused] {
+    background: #D61927;
+    color: white;
+    border-radius: 3px;
+}
+
+.calendarButton {
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    padding: 4px;
+}
+
+.dateRangePopover {
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.calendarHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.calendarHeader button {
+    cursor: pointer;
+    border: none;
+    background: transparent;
+    padding: 6px;
+}
+
+.react-aria-CalendarGrid {
+    border-collapse: collapse;
+}
+
+.react-aria-CalendarCell {
+    width: 36px;
+    height: 36px;
+    text-align: center;
+    cursor: pointer;
+    border-radius: 6px;
+}
+
+.react-aria-CalendarCell[data-selected] {
+    background: #D61927;
+    color: white;
+}
+
+.react-aria-CalendarCell[data-selection-start],
+.react-aria-CalendarCell[data-selection-end] {
+    background: #D61927;
+    color: white;
+    border-radius: 6px;
+}
+
+.react-aria-CalendarCell[data-outside-month] {
+    color: #aaa;
+}
