@@ -60,9 +60,10 @@ function MenuTab({ notify, ask }) {
       const res = await api(`/manager/menu/${currentItemId}/ingredients`, { method: "GET" });
       currentIngredientIds = res?.ingredientIds || [];
       console.log("Current ingredient IDs for item", currentItemId, ":", currentIngredientIds);
-    } catch {
-      // If no endpoint exists, skip ingredient loading
-      console.warn("Could not load current ingredients for item", currentItemId);
+    } catch (error) {
+      console.error("Error fetching current ingredient IDs:", currentItemId, error);
+      alert("Unable to load this item's ingredients. Please try again.");
+      return;
     }
 
     //Prefilling
@@ -257,7 +258,6 @@ function MenuTab({ notify, ask }) {
         }
 
         checkbox.addEventListener('change', () => {
-          i = Number(checkbox.dataset.invId);
           if (checkbox.checked) {
             selected.add(invId);
           } else {
