@@ -1160,7 +1160,7 @@ void Generator::generateUsers() {
 }
 
 void Generator::generateItems() {//https://www.pandaexpress.com/location/borgen-blvd-sr16/menu/a-la-carte
-    const int len = 30;
+    const int len = 29;
     allItems.resize(len);
 
     allItems[0] = std::make_unique<Item>(
@@ -1493,7 +1493,7 @@ allIngredients[50] = std::make_unique<Ingredient>(
 }
 
 void Generator::generateIngredientRelations() {
-    const int len = 89;
+    const int len = 85;
     allRelations.resize(len);
 
     // 1: Cantonese BBQ Brisket
@@ -1634,15 +1634,9 @@ void Generator::generateIngredientRelations() {
     // 28: Coca-Cola Zero Sugar
     allRelations[81] = std::make_unique<IngredientRelation>(28, 28); // Coca-Cola Zero Sugar
 
-    // 29: Cantonese BBQ Brisket (alternate/custom item)
-    allRelations[82] = std::make_unique<IngredientRelation>(29, 3);  // Beef
-    allRelations[83] = std::make_unique<IngredientRelation>(29, 2);  // BBQ Sauce
-    allRelations[84] = std::make_unique<IngredientRelation>(29, 29); // Onions
-    allRelations[85] = std::make_unique<IngredientRelation>(29, 10); // Seasoning Blend
-
-    // 30: Hot Orange Chicken
-    allRelations[86] = std::make_unique<IngredientRelation>(30, 1);  // Chicken
-    allRelations[87] = std::make_unique<IngredientRelation>(30, 14); // Orange Sauce
-    allRelations[88] = std::make_unique<IngredientRelation>(30, 34); // Dried Chili Peppers
+    // 29: Hot Orange Chicken
+    allRelations[82] = std::make_unique<IngredientRelation>(29, 1);  // Chicken
+    allRelations[83] = std::make_unique<IngredientRelation>(29, 14); // Orange Sauce
+    allRelations[84] = std::make_unique<IngredientRelation>(29, 34); // Dried Chili Peppers
     //allRelations[8] = new IngredientRelation();
 }
