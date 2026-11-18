@@ -17,3 +17,4 @@ src/sql-scripts/sql/Reset.sql
 # C++ build artifacts
 src/sql-scripts/generator/generate
 src/sql-scripts/generator/*.o
+node_modules
