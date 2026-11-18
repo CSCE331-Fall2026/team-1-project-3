@@ -1,15 +1,16 @@
 package backend.database;
 
-import backend.models.MenuRecord;
+import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.math.BigDecimal;
-import java.util.Map;
-import java.util.TreeMap;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
+
+import backend.models.MenuRecord;
 
 /** Handles cashier menu reads and checkout transactions. */
 public final class CashierRepository {
@@ -20,7 +21,7 @@ public final class CashierRepository {
     }
 
     public List<MenuRecord> loadMenu() throws Exception {
-        final String SQL = "SELECT name, price, item_id, category_id FROM item "
+        final String SQL = "SELECT name, price, item_id, category_id, nutrition FROM item "
                                 + "WHERE category_id BETWEEN 1 AND 3 AND active = TRUE "
                                 + "ORDER BY category_id, item_id";
 
@@ -32,7 +33,7 @@ public final class CashierRepository {
             ) {
             while (resultSet.next()) {
                 menu.add(new MenuRecord(resultSet.getInt("item_id"), resultSet.getBigDecimal("price"),
-                        resultSet.getString("name"), resultSet.getInt("category_id")));
+                        resultSet.getString("name"), resultSet.getInt("category_id"), resultSet.getString("nutrition")));
             }
         }
         catch (Exception e) {

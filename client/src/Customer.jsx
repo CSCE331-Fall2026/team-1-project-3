@@ -10,11 +10,14 @@ const LOCATION_ID = 1; // TODO: take from login/session instead of constants
 const USER_ID = 3;
 
 
-const GRID = "flex grid grid-cols-3 gap-[5px] border border-[grey] p-[15px] overflow-auto min-w-0";
+const GRID = "flex grid grid-cols-3 gap-[5px] border-t border-gray-300 p-[15px] overflow-auto min-w-0";
 const GRID_TITLE = "p-2.5 text-[22px] text-center font-bold w-full";
-const COL = "flex flex-col gap-[5px] border border-[grey] p-[15px] overflow-auto min-w-0";
-const COL_TITLE = "p-2.5 text-[22px] text-center font-bold";
-const SELECTED = "border-2 border-brand font-bold";
+const MEAL_GRID_TITLE = "p-2.5 text-[22px] text-center font-bold w-full flex items-center justify-between";
+const COL = "flex flex-col gap-[5px] border border-gray-300 p-[15px] overflow-auto min-w-0";
+const SELECTED = "border-2 border-brand";
+const BUTTON_TWO = "bg-brand px-4 py-2 text-white hover:bg-brand2";
+const MENU_TILE = "border-1 shadow-xl border-gray-200 flex flex-col items-center gap-2 rounded-[10px] hover:border-brand hover:shadow-none";
+const INFO = "absolute top-1 left-1 rounded-full border-gray-500 text-gray-500 !text-[10px] !min-h-0 !px-1.5 !py-0.75 hover:border-gray-900 hover:text-gray-900 hover:font-bold"; 
 
 
 export default function Customer({ onChangeView }) {
@@ -24,6 +27,10 @@ export default function Customer({ onChangeView }) {
   const [pendingMains, setPendingMains] = useState([]);
   const [pendingSide, setPendingSide] = useState(null);
   const [cartLines, setCartLines] = useState([]);
+  const [mealDetails, setMealDetails] = useState(false);
+  const [nutritionDetails, setNutritionDetails] = useState(false);
+  const [itemDetails, setItemDetails] = useState(null);
+  const [pendingScrollIndex, setPendingScrollIndex] = useState(null);
   // idle | inProgress | uncertain (replaces checkoutInProgress / checkoutOutcomeUncertain)
   const [checkoutState, setCheckoutState] = useState("idle");
   const [notice, setNotice] = useState(null);
@@ -35,7 +42,7 @@ export default function Customer({ onChangeView }) {
   const sidesRef = useRef(null);
   const drinksRef = useRef(null);
   const cartRef = useRef(null);
-  const tabs = [["Meal", mealRef], ["Mains", mainsRef], ["Sides", sidesRef], ["Drinks", drinksRef], ["Cart", cartRef]];
+  const tabs = [["Meal", mealRef], ["Mains", mainsRef], ["Sides", sidesRef], ["Drinks", drinksRef]];
 
 
 
@@ -77,12 +84,8 @@ export default function Customer({ onChangeView }) {
 
   const selectSize = (size) => {
     setSelectedSize((cur) => (cur === size ? null : size));
+    setMealDetails(!mealDetails);
     resetPending();
-    <fieldset className="contents" disabled={locked}>
-      {grid(CATEGORY.MAIN, "Mains", mainsRef)}
-      {grid(CATEGORY.SIDE, "Sides", sidesRef)}
-      {grid(CATEGORY.DRINK, "Drinks", drinksRef)}
-    </fieldset>
   };
 
 
@@ -109,20 +112,29 @@ export default function Customer({ onChangeView }) {
     const needed = MEAL_SIZES[selectedSize].mains;
     let mains = pendingMains;
     let side = pendingSide;
-    if (record.categoryId === CATEGORY.MAIN && mains.length < needed) mains = [...mains, record];
+    if (record.categoryId === CATEGORY.MAIN) {
+      if (mains.length < needed) mains = [...mains, record];
+      else if (needed === 1) mains = [...mains.slice(1), record]
+    }
     if (record.categoryId === CATEGORY.SIDE) side = record;
 
-
-    if (mains.length === needed && side) {
-      addToCart(mealLine(selectedSize, mains, side));
-      setSelectedSize(null); // the original calls selectSize(selectedSize), which toggles it off
-      resetPending();
-    } else {
-      setPendingMains(mains);
-      setPendingSide(side);
-    }
+    setPendingMains(mains);
+    setPendingSide(side);
   };
 
+  const addPendingMealToCart = () => {
+    if (!selectedSize) return;
+
+    const needed = MEAL_SIZES[selectedSize].mains;
+
+    if (pendingMains.length !== needed || !pendingSide) return;
+
+    addToCart(mealLine(selectedSize, pendingMains, pendingSide));
+
+    setSelectedSize(null);
+    resetPending();
+    setMealDetails(false);
+  }
 
   const changeQuantity = (id, delta) =>
     setCartLines((lines) =>
@@ -159,38 +171,75 @@ export default function Customer({ onChangeView }) {
     setCheckoutState("idle");
   };
 
-
-  const column = (category, label, ref) => (
-    <section ref={ref} className={COL}>
-      <h3 className={COL_TITLE}>{label}</h3>
-      <div >
-        {menu.filter((r) => r.categoryId === category).map((r) => (
-        <button key={r.itemId} className={isSelected(r) ? SELECTED : ""} onClick={() => pressMenuItem(r)}>
-          {r.name}
-        </button>
-      ))}
-      </div>
-    </section>
-  );
+  const mealProgressText = (category) => {
+    if (!selectedSize) return null;
+    
+    if (category === CATEGORY.MAIN) {
+      const needed = MEAL_SIZES[selectedSize].mains;
+      return `${pendingMains.length}/${needed} main`;
+    }
+    
+    if (category === CATEGORY.SIDE) {
+      return `${pendingSide ? 1 : 0}/1 side`;
+    }
+    
+    return null;
+  };
 
   const grid = (category, label, ref) => (
     <section ref={ref} className="flex flex-col">
       <h3 className={GRID_TITLE}>{label}</h3>
       <div className={GRID}>
         {menu.filter((r) => r.categoryId === category).map((r) => (
-        <button key={r.itemId} className={isSelected(r) ? SELECTED : ""} onClick={() => pressMenuItem(r)}>
+        <div key={r.itemId} className={`${MENU_TILE} relative`} onClick={() => setItemDetails(r)}>
+          <button className={INFO}
+          onClick={(e) => { e.stopPropagation(); setNutritionDetails(r);}}>i</button>
+          <img src="" className="h-20 w-20 object-contain"/>
+          <span>{r.name}</span>
+        </div>
+      ))}
+      </div>
+    </section>
+  );
+
+  const mealGrid = (category, label, ref) => {
+    const progress = mealProgressText(category);
+    return (
+    <section ref={ref} className="flex flex-col">
+      <h3 className={MEAL_GRID_TITLE}>{label}
+        {progress && (
+          <span className="text-[18px] font-normal">
+            {progress}
+          </span>
+        )}
+      </h3>
+      <div className={GRID}>
+        {menu.filter((r) => r.categoryId === category).map((r) => (
+        <button key={r.itemId} className={isSelected(r) ? SELECTED : MENU_TILE} onClick={() => pressMenuItem(r)}>
           {r.name}
         </button>
       ))}
       </div>
     </section>
-  );
+    );
+  };
 
   const scrollToSection = (i) => {
     setTab(i);
     tabs[i][1].current?.scrollIntoView({behavior: "smooth", block: "start"});
   };
 
+  const goToSection = (i) => {
+    if (mealDetails) {
+      selectSize(null);
+      resetPending();
+      setMealDetails(null);
+      setPendingScrollIndex(i);
+      return;
+    }
+    
+    scrollToSection(i);
+  }
 
   return (
     <div className="flex h-dvh overflow-hidden [&_button]:text-[20px] [&_button]:min-h-[30px]">
@@ -202,19 +251,44 @@ export default function Customer({ onChangeView }) {
           key={name}
           role="tab"
           aria-selected={tab === i}
-          onClick={() => scrollToSection(i)}>
+          onClick={() => goToSection(i)}>
             {name}
           </button>
         ))}
         <div className="p-3"> <button onClick={onChangeView}>Change View</button> </div>
       </nav>
       
-      <div className="w-full flex-1 min-h-0 overflow-y-auto"> 
+      
+      <main className="relative flex-1 min-w-0 min-h-0 overflow-y-auto">
+        {mealDetails ? (
+        <div className="">
+        <fieldset className="contents" disabled={locked}>
+          {mealGrid(CATEGORY.MAIN, "Mains", mainsRef)}
+          {mealGrid(CATEGORY.SIDE, "Sides", sidesRef)}
+          <div className="border-t-1 border-gray-300 absolute inset-x-0 bottom-0 z-10 p-4">
+            <div className="flex w-full justify-between items-center gap-4 rounded bg-white px-6 py-3 text-black">
+              <span className="font-bold text-2xl">
+                {selectedSize}
+              </span>
+              <div>
+                <button className="border-white" onClick={() => goToSection(0)}>
+                  Back
+                </button>
+                <button className={BUTTON_TWO} onClick={() => addPendingMealToCart()}>
+                Add to Cart
+                </button>
+              </div>
+            </div>
+          </div>
+        </fieldset>
+        </div> ) : 
+        ( <>
         <h3 className={GRID_TITLE}>Meal</h3>
         <section ref={mealRef} className={GRID}>
           {Object.entries(MEAL_SIZES).map(([size, { label }]) => (
-            <button key={size} className={selectedSize === size ? SELECTED : ""} onClick={() => selectSize(size)}>
-              {label}
+            <button key={size} className={MENU_TILE} onClick={() => selectSize(size)}>
+              <img src="" className="h-20 w-20 object-contain"/>
+              <span>{label}</span>
             </button>
           ))}
         </section>
@@ -225,11 +299,12 @@ export default function Customer({ onChangeView }) {
           {grid(CATEGORY.MAIN, "Mains", mainsRef)}
           {grid(CATEGORY.SIDE, "Sides", sidesRef)}
           {grid(CATEGORY.DRINK, "Drinks", drinksRef)}
-        </fieldset>
+        </fieldset> </>)}
+        </main>
 
-
-        <aside ref={cartRef} className="flex flex-col gap-[5px] min-h-0">
+        <aside className="flex w-[360px] shrink-0 flex-col gap-[5px] min-h-0 overflow-y-auto p-3">
           <fieldset className={`${COL} flex-1 items-stretch`} disabled={locked}>
+            {menuStatus === "ready" && <p className="mt-2.5 text-[22px] font-bold">Total Price: {money(total)}</p>}
             {cartLines.map((line) => (
               <div className="flex gap-[5px] items-center" key={line.id}>
                 {/* Unchecking removes the line, as in the original */}
@@ -241,16 +316,40 @@ export default function Customer({ onChangeView }) {
                 <button onClick={() => changeQuantity(line.id, 1)}>+</button>
               </div>
             ))}
-            {menuStatus === "ready" && <p className="mt-2.5 text-[22px] font-bold">Total Price: {money(total)}</p>}
           </fieldset>
           <button disabled={locked || menuStatus === "loading" || !cartLines.length} onClick={confirmCheckout}>
             Checkout
           </button>
         </aside>
-      </div>
-
 
       {notice && <Notice key={notice.id} notice={notice} onClose={() => setNotice(null)} />}
+      {itemDetails && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="rounded-[10px] text-[20px] bg-white p-6 flex flex-col gap-3"> 
+            <div className="border-b border-gray-300 py-3">{itemDetails.name}</div>
+            <button className={BUTTON_TWO} onClick={() => {
+              pressMenuItem(itemDetails); 
+              setItemDetails(null);
+            }}>
+              Add to Cart {money(itemDetails.priceCents)}
+            </button>
+            <button className={BUTTON_TWO} onClick={() => {setItemDetails(null);}}>
+              Close
+            </button> 
+          </div>
+        </div>
+      )}
+      {nutritionDetails && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="rounded-[10px] text-[20px] bg-white p-6 flex flex-col gap-3"> 
+            <div className="border-b border-gray-300 py-3">{nutritionDetails.name}</div>
+            <div className="text-[15px] whitespace-pre-line">{nutritionDetails.nutrition}</div>
+            <button className={BUTTON_TWO} onClick={() => {setNutritionDetails(null);}}>
+              Close
+            </button> 
+          </div>
+        </div>
+      )}
     </div>
   );
 }
