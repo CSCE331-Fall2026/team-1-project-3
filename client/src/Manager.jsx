@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import {
   Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from "recharts";
+import { DateRangePicker } from "./components/DateRangePicker/DateRangePicker";
 import { api, money, parsePrice, MAX_STOCK } from "./lib.js";
 import { FormDialog, Notice } from "./ui.jsx";
 
@@ -390,7 +391,7 @@ function ChartTab({ endpoint, title, rangePrefix, valueLabel, failure, notify, a
     try {
       const rows = await api(`/manager/${endpoint}${qs}`);
       setChart({
-        title: range ? `${rangePrefix} From ${range.start} to ${range.end}` : title,
+        title: range ? `${rangePrefix} From ${(range.start).slice(0, 10)} to ${(range.end).slice(0, 10)}` : title,
         rows: rows.map((r) => ({ label: r.label ?? `#${r.id}-${r.name} ${r.value}`, value: r.value })),
       });
     } catch {
@@ -399,30 +400,32 @@ function ChartTab({ endpoint, title, rangePrefix, valueLabel, failure, notify, a
   }, [endpoint]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { load(null); }, [load]);
 
-  async function changePeriod() {
-    const v = await ask({
-      title: "Change Time Period", header: "Enter the start and end time periods (inclusive):",
-      fields: [
-        { name: "start", label: "Start:", placeholder: "ex. 2026-01-31 00:00:00" },
-        { name: "end", label: "End:", placeholder: "ex. 2026-01-31 23:59:59" },
-      ],
-    });
-    if (!v) return;
-    const start = v.start.trim(), end = v.end.trim();
-    if (!start || !end) return notify("Invalid Input", "Both start and end time periods are required.", "");
+  const [dateRange, setDateRange] = useState(null);
+
+  function changePeriod(range) {
+    setDateRange(range);
+
+    //wait for both inputs
+    if (!range) return;
+
+    const start = `${range.start.toString()} 00:00:00`;
+    const end = `${range.end.toString()} 23:59:59`;
+
     load({ start, end });
   }
 
   return (
     <>
+      <div>
+        <DateRangePicker label="Change Time Period" granularity="day" onChange={changePeriod}/>
+      </div>
       <div className={TOOLBAR}>
-        <button onClick={changePeriod}>Change Time Period</button>
         <h2 className={TOOLBAR_TITLE}>{chart.title}</h2>
       </div>
       {chart.rows && (
         <div className="w-full" style={{ height: Math.max(320, chart.rows.length * 28 + 80) }}>
           <ResponsiveContainer>
-            <BarChart data={chart.rows} layout="vertical" margin={{ left: 16, right: 24, bottom: 16 }}>
+            <BarChart data={chart.rows} layout="vertical" margin={{ left: 16, right: 24, bottom: 16, top: 16 }}>
               <CartesianGrid strokeDasharray="3 3" horizontal={false} />
               <XAxis type="number" allowDecimals={false} label={{ value: valueLabel, position: "insideBottom", offset: -8 }} />
               <YAxis type="category" dataKey="label" width={260} interval={0} tick={{ fontSize: 12 }} />
