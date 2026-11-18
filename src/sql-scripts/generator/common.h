@@ -148,25 +148,28 @@ class Item : public Scriptable {
     private:
         int id;
         ItemCategory category;
+        string nutrition;
         float price;
         string name;
         const SeasonTime startTime;
         const SeasonTime endTime;
 
     public:
-        Item(int id, ItemCategory category, float price, const string& name) : id(id), category(category), price(price), name(name), startTime(1,1), endTime(12,31) {}
-        Item(ItemCategory category, float price, const string& name) : id(getId()), category(category), price(price), name(name), startTime(1,1), endTime(12,31) {}
-        Item(int id, ItemCategory category, float price, const string& name, const SeasonTime& start, const SeasonTime& end) : id(id), category(category), price(price), name(name), startTime(start), endTime(end) {}
-        Item(ItemCategory category, float price, const string& name, const SeasonTime& start, const SeasonTime& end) : id(getId()), category(category), price(price), name(name), startTime(start), endTime(end) {}
+        Item(int id, ItemCategory category, string nutrition, float price, const string& name) : id(id), category(category), nutrition(nutrition), price(price), name(name), startTime(1,1), endTime(12,31) {}
+        Item(ItemCategory category, string nutrition, float price, const string& name) : id(getId()), category(category), nutrition(nutrition), price(price), name(name), startTime(1,1), endTime(12,31) {}
+        Item(int id, ItemCategory category, string nutrition, float price, const string& name, const SeasonTime& start, const SeasonTime& end) : id(id), category(category), nutrition(nutrition), price(price), name(name), startTime(start), endTime(end) {}
+        Item(ItemCategory category, string nutrition, float price, const string& name, const SeasonTime& start, const SeasonTime& end) : id(getId()), category(category), nutrition(nutrition), price(price), name(name), startTime(start), endTime(end) {}
         Item(const Item& copy) : startTime(copy.startTime), endTime(copy.endTime) {
             id = copy.id;
             category = copy.category;
+            nutrition = string(copy.nutrition.c_str());
             price = copy.price;
             name = string(copy.name.c_str());
         }
         Item(Item&& move) : startTime(std::move(move.startTime)), endTime(std::move(move.endTime)) {
             id = move.id;
             category = move.category;
+            nutrition = std::move(move.nutrition);
             price = move.price;
             name = std::move(move.name);
         }
