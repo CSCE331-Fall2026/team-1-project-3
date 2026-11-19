@@ -1,3 +1,5 @@
+import { accessToken } from "./auth.js";
+
 // Shared helpers: API client, money (integer cents instead of BigDecimal),
 // MealSize, and the CartLine / flattenCart logic.
 
@@ -16,15 +18,23 @@ export function parsePrice(text) {
 }
 
 export async function api(path, { method = "GET", body, signal } = {}) {
+  const headers = {};
+  if (body) {
+    headers["Content-Type"] = "application/json";
+  }
+  // send the login token if there is one, the server uses it to check the role
+  const token = accessToken();
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
   const res = await fetch(`/api${path}`, {
     method,
-    headers: body ? { "Content-Type": "application/json" } : undefined,
+    headers,
     body: body ? JSON.stringify(body) : undefined,
     signal,
   });
   const data = await res.json().catch(() => null);
   if (!res.ok) {
-    // err.status is only set when the server actually answered.
     const err = new Error(data?.error ?? res.statusText);
     err.status = res.status;
     throw err;

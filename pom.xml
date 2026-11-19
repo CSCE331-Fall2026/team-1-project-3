@@ -27,6 +27,18 @@
       <artifactId>spring-boot-starter-web</artifactId>
     </dependency>
     
+    <!-- oauth2 login server (login page + tokens for app_user accounts) -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-oauth2-authorization-server</artifactId>
+    </dependency>
+
+    <!-- checks the oauth2 token on /api requests -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
+    </dependency>
+
     <!-- HikariCP finds the driver from the JDBC URL, so runtime scope is enough. -->
     <dependency>
       <groupId>org.postgresql</groupId>
