@@ -68,20 +68,27 @@ export default function Cashier({ onChangeView }) {
 
   const pressMenuItem = (record) => {
     if (!selectedSize || record.categoryId === CATEGORY.DRINK) return addToCart(singleLine(record));
+
+    if (isSelected(record)){
+      if (record.categoryId === CATEGORY.MAIN){
+        setPendingMains((cur) => cur.filter((m) => m.itemId !== record.itemId));
+      } else {
+        setPendingSide(null);
+      }
+      return
+    }
+
     const needed = MEAL_SIZES[selectedSize].mains;
     let mains = pendingMains;
     let side = pendingSide;
-    if (record.categoryId === CATEGORY.MAIN && mains.length < needed) mains = [...mains, record];
+    if (record.categoryId === CATEGORY.MAIN) {
+      if (mains.length < needed) mains = [...mains, record];
+      else if (needed === 1) mains = [...mains.slice(1), record]
+    }
     if (record.categoryId === CATEGORY.SIDE) side = record;
 
-    if (mains.length === needed && side) {
-      addToCart(mealLine(selectedSize, mains, side));
-      setSelectedSize(null); // the original calls selectSize(selectedSize), which toggles it off
-      resetPending();
-    } else {
-      setPendingMains(mains);
-      setPendingSide(side);
-    }
+    setPendingMains(mains);
+    setPendingSide(side);
   };
 
   const changeQuantity = (id, delta) =>
