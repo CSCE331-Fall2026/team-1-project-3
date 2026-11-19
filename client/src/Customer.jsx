@@ -327,7 +327,7 @@ export default function Customer({ onChangeView }) {
               </div>
             ))}
           </fieldset>
-          <button disabled={locked || menuStatus === "loading" || !cartLines.length} onClick={confirmCheckout}>
+          <button className={BUTTON_TWO} disabled={locked || menuStatus === "loading" || !cartLines.length} onClick={confirmCheckout}>
             Checkout
           </button>
         </aside>
