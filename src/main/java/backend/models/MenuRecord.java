@@ -44,13 +44,13 @@ public final class MenuRecord {
     }
 
     //for cashier view: ingredientIDs not needed
-    public MenuRecord(int itemID, BigDecimal price, String name, int categoryID) {
+    public MenuRecord(int itemID, BigDecimal price, String name, int categoryID, String nutrition) {
         this.itemID = itemID;
         this.price = price;
         this.name = name;
         this.categoryID = categoryID;
         this.ingredientIDs = new ArrayList<>();
-        this.nutrition = "";
+        this.nutrition = nutrition;
         this.unitSize = "";
     }
 

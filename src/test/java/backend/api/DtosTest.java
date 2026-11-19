@@ -24,6 +24,6 @@ class DtosTest {
     void cashierMenuItemContractIsUnchanged() {
         List<String> fields = Arrays.stream(MenuItem.class.getRecordComponents()).map(c -> c.getName()).toList();
         assertThat(fields).containsExactly("itemId", "name", "priceCents", "categoryId");
-        assertThat(MenuItem.of(record)).isEqualTo(new MenuItem(7, "Orange Chicken", 830, 2));
+        assertThat(MenuItem.of(record)).isEqualTo(new MenuItem(7, "Orange Chicken", 830, 2, "490 cal"));
     }
 }
