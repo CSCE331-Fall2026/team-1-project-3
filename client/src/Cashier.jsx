@@ -68,16 +68,6 @@ export default function Cashier({ onChangeView }) {
 
   const pressMenuItem = (record) => {
     if (!selectedSize || record.categoryId === CATEGORY.DRINK) return addToCart(singleLine(record));
-
-    if (isSelected(record)){
-      if (record.categoryId === CATEGORY.MAIN){
-        setPendingMains((cur) => cur.filter((m) => m.itemId !== record.itemId));
-      } else {
-        setPendingSide(null);
-      }
-      return
-    }
-
     const needed = MEAL_SIZES[selectedSize].mains;
     let mains = pendingMains;
     let side = pendingSide;
@@ -87,8 +77,14 @@ export default function Cashier({ onChangeView }) {
     }
     if (record.categoryId === CATEGORY.SIDE) side = record;
 
-    setPendingMains(mains);
-    setPendingSide(side);
+    if (mains.length === needed && side) {
+      addToCart(mealLine(selectedSize, mains, side));
+      setSelectedSize(null); // the original calls selectSize(selectedSize), which toggles it off
+      resetPending();
+    } else {
+      setPendingMains(mains);
+      setPendingSide(side);
+    }
   };
 
   const changeQuantity = (id, delta) =>
