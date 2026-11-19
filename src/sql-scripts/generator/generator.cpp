@@ -141,7 +141,7 @@ string User::toVals() const noexcept {
 }
 
 string Item::toSql() const noexcept {
-    return "INSERT INTO item (item_id, category_id, price, name, active_from, active_to)";
+    return "INSERT INTO item (item_id, category_id, nutrition, price, name, active_from, active_to)";
 }
 string Item::toVals() const noexcept {
     string outp{"("};
@@ -149,7 +149,9 @@ string Item::toVals() const noexcept {
     outp += std::to_string(id);
     outp += ", ";
     outp += std::to_string(category + 1);
-    outp += ", ";
+    outp += ", '";
+    outp += escapeSql(nutrition);
+    outp += "', ";
     outp += std::to_string(price);
     outp += ", ";
     outp += '\'' + escapeSql(name) + '\'';
@@ -1158,39 +1160,213 @@ void Generator::generateUsers() {
 }
 
 void Generator::generateItems() {//https://www.pandaexpress.com/location/borgen-blvd-sr16/menu/a-la-carte
-    const int len = 30;
+    const int len = 29;
     allItems.resize(len);
 
-    allItems[0] = std::make_unique<Item>(1, ItemCategory::ENTREE, 13.80, "Cantonese BBQ Brisket");
-    allItems[1] = std::make_unique<Item>(2, ItemCategory::ENTREE, 12.30, "Honey Walnut Shrimp");
-    allItems[2] = std::make_unique<Item>(3, ItemCategory::ENTREE, 12.30, "Black Pepper Sirloin Steak");
-    allItems[3] = std::make_unique<Item>(4, ItemCategory::ENTREE, 9.30, "Mushroom Chicken");
-    allItems[4] = std::make_unique<Item>(5, ItemCategory::ENTREE, 9.30, "Kung Pao Chicken");
-    allItems[5] = std::make_unique<Item>(6, ItemCategory::ENTREE, 9.30, "String Bean Chicken Breast");
-    allItems[6] = std::make_unique<Item>(7, ItemCategory::ENTREE, 9.30, "The Original Orange Chicken");
-    allItems[7] = std::make_unique<Item>(8, ItemCategory::ENTREE, 9.30, "SweetFire Chicken Breast");
-    allItems[8] = std::make_unique<Item>(9, ItemCategory::ENTREE, 9.30, "Honey Sesame Chicken Breast");
-    allItems[9] = std::make_unique<Item>(10, ItemCategory::ENTREE, 9.30, "Grilled Teriyaki Chicken");
-    allItems[10] = std::make_unique<Item>(11, ItemCategory::ENTREE, 9.30, "Broccoli Beef");
-    allItems[11] = std::make_unique<Item>(12, ItemCategory::ENTREE, 9.30, "Beijing Beef");
-    allItems[12] = std::make_unique<Item>(13, ItemCategory::SIDE, 4.65, "White Steamed Rice");
-    allItems[13] = std::make_unique<Item>(14, ItemCategory::SIDE, 4.65, "Fried Rice");
-    allItems[14] = std::make_unique<Item>(15, ItemCategory::SIDE, 4.65, "Chow Mein");
-    allItems[15] = std::make_unique<Item>(16, ItemCategory::SIDE, 4.65, "Super Greens");
-    allItems[16] = std::make_unique<Item>(17, ItemCategory::SIDE, 2.10, "Veggie Spring Roll");
-    allItems[17] = std::make_unique<Item>(18, ItemCategory::SIDE, 2.10, "Chicken Egg Roll");
-    allItems[18] = std::make_unique<Item>(19, ItemCategory::SIDE, 2.10, "Cream Cheese Rangoon");
-    allItems[19] = std::make_unique<Item>(20, ItemCategory::DRINK, 3.60, "Watermelon Mango Flavored Refresher");
-    allItems[20] = std::make_unique<Item>(21, ItemCategory::DRINK, 2.70, "Fanta Orange");
-    allItems[21] = std::make_unique<Item>(22, ItemCategory::DRINK, 2.70, "Dr Pepper");
-    allItems[22] = std::make_unique<Item>(23, ItemCategory::DRINK, 2.70, "Dasani");
-    allItems[23] = std::make_unique<Item>(24, ItemCategory::DRINK, 3.50, "Smartwater");
-    allItems[24] = std::make_unique<Item>(25, ItemCategory::DRINK, 2.70, "Sprite");
-    allItems[25] = std::make_unique<Item>(26, ItemCategory::DRINK, 2.70, "Minute Maid Lemonade");
-    allItems[26] = std::make_unique<Item>(27, ItemCategory::DRINK, 3.60, "Pomegranate Pineapple Flavored Lemonade");
-    allItems[27] = std::make_unique<Item>(28, ItemCategory::DRINK, 2.70, "Coca Cola Zero Sugar");
-    allItems[28] = std::unique_ptr<Item>(new Item(29,ItemCategory::ENTREE, 10.00 , "Cantonese BBQ Brisket", {6, 2}, {8, 10}));
-    allItems[29] = std::unique_ptr<Item>(new Item(30,ItemCategory::ENTREE, 10.00 , "Hot Orange Chicken", {7, 11}, {9, 30}));
+    allItems[0] = std::make_unique<Item>(
+    1,
+    ItemCategory::ENTREE,
+    "Calories: 460\nTotal Fat: 24g\nSaturated Fat: 8g\nTrans Fat: 0g\nCholesterol: 90mg\nSodium: 1,040mg\nTotal Carbohydrate: 29g\nDietary Fiber: 2g\nTotal Sugars: 22g\nProtein: 24g",
+    13.80,
+    "Cantonese BBQ Brisket");
+
+allItems[1] = std::make_unique<Item>(
+    2,
+    ItemCategory::ENTREE,
+    "Calories: 360\nTotal Fat: 23g\nSaturated Fat: 3.5g\nTrans Fat: 0g\nCholesterol: 160mg\nSodium: 440mg\nTotal Carbohydrate: 35g\nDietary Fiber: 0g\nTotal Sugars: 9g\nProtein: 13g",
+    12.30,
+    "Honey Walnut Shrimp");
+
+allItems[2] = std::make_unique<Item>(
+    3,
+    ItemCategory::ENTREE,
+    "Calories: 180\nTotal Fat: 7g\nSaturated Fat: 1.5g\nTrans Fat: 0g\nCholesterol: 45mg\nSodium: 710mg\nTotal Carbohydrate: 13g\nDietary Fiber: 2g\nTotal Sugars: 7g\nProtein: 19g",
+    12.30,
+    "Black Pepper Sirloin Steak");
+
+allItems[3] = std::make_unique<Item>(
+    4,
+    ItemCategory::ENTREE,
+    "Calories: 220\nTotal Fat: 13g\nSaturated Fat: 2g\nTrans Fat: 0g\nCholesterol: 80mg\nSodium: 840mg\nTotal Carbohydrate: 9g\nDietary Fiber: 1g\nTotal Sugars: 4g\nProtein: 13g",
+    9.30,
+    "Mushroom Chicken");
+
+allItems[4] = std::make_unique<Item>(
+    5,
+    ItemCategory::ENTREE,
+    "Calories: 290\nTotal Fat: 19g\nSaturated Fat: 3.5g\nTrans Fat: 0g\nCholesterol: 55mg\nSodium: 970mg\nTotal Carbohydrate: 14g\nDietary Fiber: 2g\nTotal Sugars: 6g\nProtein: 16g",
+    9.30,
+    "Kung Pao Chicken");
+
+allItems[5] = std::make_unique<Item>(
+    6,
+    ItemCategory::ENTREE,
+    "Calories: 210\nTotal Fat: 9g\nSaturated Fat: 1.5g\nTrans Fat: 0g\nCholesterol: 65mg\nSodium: 590mg\nTotal Carbohydrate: 13g\nDietary Fiber: 4g\nTotal Sugars: 4g\nProtein: 19g",
+    9.30,
+    "String Bean Chicken Breast");
+
+allItems[6] = std::make_unique<Item>(
+    7,
+    ItemCategory::ENTREE,
+    "Calories: 490\nTotal Fat: 23g\nSaturated Fat: 4.5g\nTrans Fat: 0g\nCholesterol: 80mg\nSodium: 820mg\nTotal Carbohydrate: 51g\nDietary Fiber: 2g\nTotal Sugars: 19g\nProtein: 25g",
+    9.30,
+    "The Original Orange Chicken");
+
+allItems[7] = std::make_unique<Item>(
+    8,
+    ItemCategory::ENTREE,
+    "Calories: 380\nTotal Fat: 16g\nSaturated Fat: 3g\nTrans Fat: 0g\nCholesterol: 55mg\nSodium: 480mg\nTotal Carbohydrate: 45g\nDietary Fiber: 2g\nTotal Sugars: 27g\nProtein: 16g",
+    9.30,
+    "SweetFire Chicken Breast");
+
+allItems[8] = std::make_unique<Item>(
+    9,
+    ItemCategory::ENTREE,
+    "Calories: 340\nTotal Fat: 15g\nSaturated Fat: 2.5g\nTrans Fat: 0g\nCholesterol: 60mg\nSodium: 480mg\nTotal Carbohydrate: 35g\nDietary Fiber: 2g\nTotal Sugars: 17g\nProtein: 16g",
+    9.30,
+    "Honey Sesame Chicken Breast");
+
+allItems[9] = std::make_unique<Item>(
+    10,
+    ItemCategory::ENTREE,
+    "Calories: 300\nTotal Fat: 13g\nSaturated Fat: 2.5g\nTrans Fat: 0g\nCholesterol: 115mg\nSodium: 530mg\nTotal Carbohydrate: 8g\nDietary Fiber: 0g\nTotal Sugars: 7g\nProtein: 36g",
+    9.30,
+    "Grilled Teriyaki Chicken");
+
+allItems[10] = std::make_unique<Item>(
+    11,
+    ItemCategory::ENTREE,
+    "Calories: 150\nTotal Fat: 7g\nSaturated Fat: 1.5g\nTrans Fat: 0g\nCholesterol: 45mg\nSodium: 520mg\nTotal Carbohydrate: 13g\nDietary Fiber: 3g\nTotal Sugars: 7g\nProtein: 9g",
+    9.30,
+    "Broccoli Beef");
+
+allItems[11] = std::make_unique<Item>(
+    12,
+    ItemCategory::ENTREE,
+    "Calories: 470\nTotal Fat: 26g\nSaturated Fat: 5g\nTrans Fat: 0g\nCholesterol: 90mg\nSodium: 660mg\nTotal Carbohydrate: 46g\nDietary Fiber: 1g\nTotal Sugars: 24g\nProtein: 13g",
+    9.30,
+    "Beijing Beef");
+
+allItems[12] = std::make_unique<Item>(
+    13,
+    ItemCategory::SIDE,
+    "Calories: 380\nTotal Fat: 0g\nSaturated Fat: 0g\nTrans Fat: 0g\nCholesterol: 0mg\nSodium: 0mg\nTotal Carbohydrate: 86g\nDietary Fiber: 1g\nTotal Sugars: 0g\nProtein: 7g",
+    4.65,
+    "White Steamed Rice");
+
+allItems[13] = std::make_unique<Item>(
+    14,
+    ItemCategory::SIDE,
+    "Calories: 520\nTotal Fat: 16g\nSaturated Fat: 3g\nTrans Fat: 0g\nCholesterol: 0mg\nSodium: 850mg\nTotal Carbohydrate: 85g\nDietary Fiber: 1g\nTotal Sugars: 3g\nProtein: 11g",
+    4.65,
+    "Fried Rice");
+
+allItems[14] = std::make_unique<Item>(
+    15,
+    ItemCategory::SIDE,
+    "Calories: 510\nTotal Fat: 22g\nSaturated Fat: 4g\nTrans Fat: 0g\nCholesterol: 0mg\nSodium: 980mg\nTotal Carbohydrate: 80g\nDietary Fiber: 4g\nTotal Sugars: 9g\nProtein: 13g",
+    4.65,
+    "Chow Mein");
+
+allItems[15] = std::make_unique<Item>(
+    16,
+    ItemCategory::SIDE,
+    "Calories: 130\nTotal Fat: 6g\nSaturated Fat: 1g\nTrans Fat: 0g\nCholesterol: 0mg\nSodium: 260mg\nTotal Carbohydrate: 14g\nDietary Fiber: 5g\nTotal Sugars: 6g\nProtein: 6g",
+    4.65,
+    "Super Greens");
+
+allItems[16] = std::make_unique<Item>(
+    17,
+    ItemCategory::SIDE,
+    "Calories: 190\nTotal Fat: 8g\nSaturated Fat: 1g\nTrans Fat: 0g\nCholesterol: 0mg\nSodium: 250mg\nTotal Carbohydrate: 27g\nDietary Fiber: 2g\nTotal Sugars: 3g\nProtein: 3g",
+    2.10,
+    "Veggie Spring Roll");
+
+allItems[17] = std::make_unique<Item>(
+    18,
+    ItemCategory::SIDE,
+    "Calories: 200\nTotal Fat: 10g\nSaturated Fat: 2g\nTrans Fat: 0g\nCholesterol: 20mg\nSodium: 340mg\nTotal Carbohydrate: 22g\nDietary Fiber: 1g\nTotal Sugars: 2g\nProtein: 6g",
+    2.10,
+    "Chicken Egg Roll");
+
+allItems[18] = std::make_unique<Item>(
+    19,
+    ItemCategory::SIDE,
+    "Calories: 190\nTotal Fat: 11g\nSaturated Fat: 5g\nTrans Fat: 0g\nCholesterol: 35mg\nSodium: 180mg\nTotal Carbohydrate: 20g\nDietary Fiber: 1g\nTotal Sugars: 2g\nProtein: 3g",
+    2.10,
+    "Cream Cheese Rangoon");
+
+allItems[19] = std::make_unique<Item>(
+    20,
+    ItemCategory::DRINK,
+    "Calories: 270\nTotal Fat: 0g\nSaturated Fat: 0g\nTrans Fat: 0g\nCholesterol: 0mg\nSodium: 45mg\nTotal Carbohydrate: 72g\nDietary Fiber: 0g\nTotal Sugars: 70g\nProtein: 0g",
+    3.60,
+    "Watermelon Mango Flavored Refresher");
+
+allItems[20] = std::make_unique<Item>(
+    21,
+    ItemCategory::DRINK,
+    "Calories: 270\nTotal Fat: 0g\nSaturated Fat: 0g\nTrans Fat: 0g\nCholesterol: 0mg\nSodium: 85mg\nTotal Carbohydrate: 74g\nDietary Fiber: 0g\nTotal Sugars: 73g\nProtein: 0g",
+    2.70,
+    "Fanta Orange");
+
+allItems[21] = std::make_unique<Item>(
+    22,
+    ItemCategory::DRINK,
+    "Calories: 250\nTotal Fat: 0g\nSaturated Fat: 0g\nTrans Fat: 0g\nCholesterol: 0mg\nSodium: 100mg\nTotal Carbohydrate: 69g\nDietary Fiber: 0g\nTotal Sugars: 69g\nProtein: 0g",
+    2.70,
+    "Dr Pepper");
+
+allItems[22] = std::make_unique<Item>(
+    23,
+    ItemCategory::DRINK,
+    "Calories: 0\nTotal Fat: 0g\nSaturated Fat: 0g\nTrans Fat: 0g\nCholesterol: 0mg\nSodium: 0mg\nTotal Carbohydrate: 0g\nDietary Fiber: 0g\nTotal Sugars: 0g\nProtein: 0g",
+    2.70,
+    "Dasani");
+
+allItems[23] = std::make_unique<Item>(
+    24,
+    ItemCategory::DRINK,
+    "Calories: 0\nTotal Fat: 0g\nSaturated Fat: 0g\nTrans Fat: 0g\nCholesterol: 0mg\nSodium: 0mg\nTotal Carbohydrate: 0g\nDietary Fiber: 0g\nTotal Sugars: 0g\nProtein: 0g",
+    3.50,
+    "Smartwater");
+
+allItems[24] = std::make_unique<Item>(
+    25,
+    ItemCategory::DRINK,
+    "Calories: 240\nTotal Fat: 0g\nSaturated Fat: 0g\nTrans Fat: 0g\nCholesterol: 0mg\nSodium: 110mg\nTotal Carbohydrate: 65g\nDietary Fiber: 0g\nTotal Sugars: 64g\nProtein: 0g",
+    2.70,
+    "Sprite");
+
+allItems[25] = std::make_unique<Item>(
+    26,
+    ItemCategory::DRINK,
+    "Calories: 230\nTotal Fat: 0g\nSaturated Fat: 0g\nTrans Fat: 0g\nCholesterol: 0mg\nSodium: 70mg\nTotal Carbohydrate: 62g\nDietary Fiber: 0g\nTotal Sugars: 61g\nProtein: 0g",
+    2.70,
+    "Minute Maid Lemonade");
+
+allItems[26] = std::make_unique<Item>(
+    27,
+    ItemCategory::DRINK,
+    "Calories: 270\nTotal Fat: 0g\nSaturated Fat: 0g\nTrans Fat: 0g\nCholesterol: 0mg\nSodium: 65mg\nTotal Carbohydrate: 72g\nDietary Fiber: 0g\nTotal Sugars: 70g\nProtein: 0g",
+    3.60,
+    "Pomegranate Pineapple Flavored Lemonade");
+
+allItems[27] = std::make_unique<Item>(
+    28,
+    ItemCategory::DRINK,
+    "Calories: 0\nTotal Fat: 0g\nSaturated Fat: 0g\nTrans Fat: 0g\nCholesterol: 0mg\nSodium: 70mg\nTotal Carbohydrate: 0g\nDietary Fiber: 0g\nTotal Sugars: 0g\nProtein: 0g",
+    2.70,
+    "Coca Cola Zero Sugar");
+
+allItems[28] = std::unique_ptr<Item>(new Item(
+    29,
+    ItemCategory::ENTREE,
+    "Calories: 490\nTotal Fat: 23g\nSaturated Fat: 4.5g\nTrans Fat: 0g\nCholesterol: 80mg\nSodium: 820mg\nTotal Carbohydrate: 51g\nDietary Fiber: 2g\nTotal Sugars: 19g\nProtein: 25g",
+    10.00,
+    "Hot Orange Chicken",
+    {7, 11},
+    {9, 30}));
     //allItems[2] = new Item(2, , ""));
 
     for (int i = 0; i < CATEGORY_LENGTH; ++i) {
@@ -1207,111 +1383,260 @@ void Generator::generateItems() {//https://www.pandaexpress.com/location/borgen-
 }
 
 void Generator::generateIngredients(time_t startTime) {
-    const int len = 28;
+    const int len = 51;
     allIngredients.resize(len);
 
-    allIngredients[0] = std::make_unique<Ingredient>(1, "Chicken", 50, 25, startTime + 86'400 * 7, startTime + 86'400 * 14);
-    allIngredients[1] = std::make_unique<Ingredient>(2, "BBQ Sauce", 50, 25, startTime + 86'400 * 7, startTime + 86'400 * 14);
-    allIngredients[2] = std::make_unique<Ingredient>(3, "Beef", 50, 25, startTime + 86'400 * 7, startTime + 86'400 * 14);
-    allIngredients[3] = std::make_unique<Ingredient>(4, "Shrimp", 50, 25, startTime + 86'400 * 7, startTime + 86'400 * 14);
-    allIngredients[4] = std::make_unique<Ingredient>(5, "Honey Sauce", 50, 25, startTime + 86'400 * 7, startTime + 86'400 * 14);
-    allIngredients[5] = std::make_unique<Ingredient>(6, "Walnuts", 50, 25, startTime + 86'400 * 7, startTime + 86'400 * 14);
-    allIngredients[6] = std::make_unique<Ingredient>(7, "Black Pepper", 50, 25, startTime + 86'400 * 7, startTime + 86'400 * 14);
-    allIngredients[7] = std::make_unique<Ingredient>(8, "Vegetables", 50, 25, startTime + 86'400 * 7, startTime + 86'400 * 14);
-    allIngredients[8] = std::make_unique<Ingredient>(9, "Mushrooms", 50, 25, startTime + 86'400 * 7, startTime + 86'400 * 14);
-    allIngredients[9] = std::make_unique<Ingredient>(10, "Spices", 50, 25, startTime + 86'400 * 7, startTime + 86'400 * 14);
-    allIngredients[10] = std::make_unique<Ingredient>(11, "Assorted Nuts", 50, 25, startTime + 86'400 * 7, startTime + 86'400 * 14);
-    allIngredients[11] = std::make_unique<Ingredient>(12, "Peppers", 50, 25, startTime + 86'400 * 7, startTime + 86'400 * 14);
-    allIngredients[12] = std::make_unique<Ingredient>(13, "Soy Sauce", 50, 25, startTime + 86'400 * 7, startTime + 86'400 * 14);
-    allIngredients[13] = std::make_unique<Ingredient>(14, "Orange Sauce", 50, 25, startTime + 86'400 * 7, startTime + 86'400 * 14);
-    allIngredients[14] = std::make_unique<Ingredient>(15, "White Rice", 50, 25, startTime + 86'400 * 7, startTime + 86'400 * 14);
-    allIngredients[15] = std::make_unique<Ingredient>(16, "Noodles", 50, 25, startTime + 86'400 * 7, startTime + 86'400 * 14);
-    allIngredients[16] = std::make_unique<Ingredient>(17, "Cream Cheese", 50, 25, startTime + 86'400 * 7, startTime + 86'400 * 14);
-    allIngredients[17] = std::make_unique<Ingredient>(18, "Watermelon", 50, 25, startTime + 86'400 * 7, startTime + 86'400 * 14);
-    allIngredients[18] = std::make_unique<Ingredient>(19, "Mango", 50, 25, startTime + 86'400 * 7, startTime + 86'400 * 14);
-    allIngredients[19] = std::make_unique<Ingredient>(20, "Pomegranate", 50, 25, startTime + 86'400 * 7, startTime + 86'400 * 14);
-    allIngredients[20] = std::make_unique<Ingredient>(21, "Pineapple", 50, 25, startTime + 86'400 * 7, startTime + 86'400 * 14);
-    allIngredients[21] = std::make_unique<Ingredient>(22, "Fanta Orange", 50, 25, startTime + 86'400 * 7, startTime + 86'400 * 14);
-    allIngredients[22] = std::make_unique<Ingredient>(23, "Dr Pepper", 50, 25, startTime + 86'400 * 7, startTime + 86'400 * 14);
-    allIngredients[23] = std::make_unique<Ingredient>(24, "Dasani", 50, 25, startTime + 86'400 * 7, startTime + 86'400 * 14);
-    allIngredients[24] = std::make_unique<Ingredient>(25, "Smartwater", 50, 25, startTime + 86'400 * 7, startTime + 86'400 * 14);
-    allIngredients[25] = std::make_unique<Ingredient>(26, "Sprite", 50, 25, startTime + 86'400 * 7, startTime + 86'400 * 14);
-    allIngredients[26] = std::make_unique<Ingredient>(27, "Minute Maid Lemonade", 50, 25, startTime + 86'400 * 7, startTime + 86'400 * 14);
-    allIngredients[27] = std::make_unique<Ingredient>(28, "Coca Cola Zero Sugar", 50, 25, startTime + 86'400 * 7, startTime + 86'400 * 14);
-    //allIngredients[2] = new Ingredient(2, "", 50, 25, startTime + 86'400 * 7, startTime + 86'400 * 14);
+    allIngredients[0] = std::make_unique<Ingredient>(
+    1, "Chicken", 50, 25, startTime + 86'400 * 7, startTime + 86'400 * 14);
+allIngredients[1] = std::make_unique<Ingredient>(
+    2, "BBQ Sauce", 50, 25, startTime + 86'400 * 7, startTime + 86'400 * 14);
+allIngredients[2] = std::make_unique<Ingredient>(
+    3, "Beef", 50, 25, startTime + 86'400 * 7, startTime + 86'400 * 14);
+allIngredients[3] = std::make_unique<Ingredient>(
+    4, "Shrimp", 50, 25, startTime + 86'400 * 7, startTime + 86'400 * 14);
+allIngredients[4] = std::make_unique<Ingredient>(
+    5, "Honey Walnut Sauce", 50, 25, startTime + 86'400 * 7, startTime + 86'400 * 14);
+allIngredients[5] = std::make_unique<Ingredient>(
+    6, "Walnuts", 50, 25, startTime + 86'400 * 7, startTime + 86'400 * 14);
+allIngredients[6] = std::make_unique<Ingredient>(
+    7, "Black Pepper Sauce", 50, 25, startTime + 86'400 * 7, startTime + 86'400 * 14);
+allIngredients[7] = std::make_unique<Ingredient>(
+    8, "Mixed Vegetables", 50, 25, startTime + 86'400 * 7, startTime + 86'400 * 14);
+allIngredients[8] = std::make_unique<Ingredient>(
+    9, "Mushrooms", 50, 25, startTime + 86'400 * 7, startTime + 86'400 * 14);
+allIngredients[9] = std::make_unique<Ingredient>(
+    10, "Seasoning Blend", 50, 25, startTime + 86'400 * 7, startTime + 86'400 * 14);
+allIngredients[10] = std::make_unique<Ingredient>(
+    11, "Peanuts", 50, 25, startTime + 86'400 * 7, startTime + 86'400 * 14);
+allIngredients[11] = std::make_unique<Ingredient>(
+    12, "Bell Peppers", 50, 25, startTime + 86'400 * 7, startTime + 86'400 * 14);
+allIngredients[12] = std::make_unique<Ingredient>(
+    13, "Soy Sauce", 50, 25, startTime + 86'400 * 7, startTime + 86'400 * 14);
+allIngredients[13] = std::make_unique<Ingredient>(
+    14, "Orange Sauce", 50, 25, startTime + 86'400 * 7, startTime + 86'400 * 14);
+allIngredients[14] = std::make_unique<Ingredient>(
+    15, "White Rice", 50, 25, startTime + 86'400 * 7, startTime + 86'400 * 14);
+allIngredients[15] = std::make_unique<Ingredient>(
+    16, "Chow Mein Noodles", 50, 25, startTime + 86'400 * 7, startTime + 86'400 * 14);
+allIngredients[16] = std::make_unique<Ingredient>(
+    17, "Cream Cheese", 50, 25, startTime + 86'400 * 7, startTime + 86'400 * 14);
+allIngredients[17] = std::make_unique<Ingredient>(
+    18, "Watermelon Mango Refresher", 50, 25, startTime + 86'400 * 7, startTime + 86'400 * 14);
+allIngredients[18] = std::make_unique<Ingredient>(
+    19, "Mango", 50, 25, startTime + 86'400 * 7, startTime + 86'400 * 14);
+allIngredients[19] = std::make_unique<Ingredient>(
+    20, "Pomegranate", 50, 25, startTime + 86'400 * 7, startTime + 86'400 * 14);
+allIngredients[20] = std::make_unique<Ingredient>(
+    21, "Pineapple", 50, 25, startTime + 86'400 * 7, startTime + 86'400 * 14);
+allIngredients[21] = std::make_unique<Ingredient>(
+    22, "Fanta Orange", 50, 25, startTime + 86'400 * 7, startTime + 86'400 * 14);
+allIngredients[22] = std::make_unique<Ingredient>(
+    23, "Dr Pepper", 50, 25, startTime + 86'400 * 7, startTime + 86'400 * 14);
+allIngredients[23] = std::make_unique<Ingredient>(
+    24, "Dasani Water", 50, 25, startTime + 86'400 * 7, startTime + 86'400 * 14);
+allIngredients[24] = std::make_unique<Ingredient>(
+    25, "Smartwater", 50, 25, startTime + 86'400 * 7, startTime + 86'400 * 14);
+allIngredients[25] = std::make_unique<Ingredient>(
+    26, "Sprite", 50, 25, startTime + 86'400 * 7, startTime + 86'400 * 14);
+allIngredients[26] = std::make_unique<Ingredient>(
+    27, "Minute Maid Lemonade", 50, 25, startTime + 86'400 * 7, startTime + 86'400 * 14);
+allIngredients[27] = std::make_unique<Ingredient>(
+    28, "Coca-Cola Zero Sugar", 50, 25, startTime + 86'400 * 7, startTime + 86'400 * 14);
+allIngredients[28] = std::make_unique<Ingredient>(
+    29, "Onions", 50, 25, startTime + 86'400 * 7, startTime + 86'400 * 14);
+allIngredients[29] = std::make_unique<Ingredient>(
+    30, "Green Beans", 50, 25, startTime + 86'400 * 7, startTime + 86'400 * 14);
+allIngredients[30] = std::make_unique<Ingredient>(
+    31, "Broccoli", 50, 25, startTime + 86'400 * 7, startTime + 86'400 * 14);
+allIngredients[31] = std::make_unique<Ingredient>(
+    32, "Zucchini", 50, 25, startTime + 86'400 * 7, startTime + 86'400 * 14);
+allIngredients[32] = std::make_unique<Ingredient>(
+    33, "Water Chestnuts", 50, 25, startTime + 86'400 * 7, startTime + 86'400 * 14);
+allIngredients[33] = std::make_unique<Ingredient>(
+    34, "Dried Chili Peppers", 50, 25, startTime + 86'400 * 7, startTime + 86'400 * 14);
+allIngredients[34] = std::make_unique<Ingredient>(
+    35, "Kung Pao Sauce", 50, 25, startTime + 86'400 * 7, startTime + 86'400 * 14);
+allIngredients[35] = std::make_unique<Ingredient>(
+    36, "SweetFire Sauce", 50, 25, startTime + 86'400 * 7, startTime + 86'400 * 14);
+allIngredients[36] = std::make_unique<Ingredient>(
+    37, "Honey Sesame Sauce", 50, 25, startTime + 86'400 * 7, startTime + 86'400 * 14);
+allIngredients[37] = std::make_unique<Ingredient>(
+    38, "Teriyaki Sauce", 50, 25, startTime + 86'400 * 7, startTime + 86'400 * 14);
+allIngredients[38] = std::make_unique<Ingredient>(
+    39, "Broccoli Beef Sauce", 50, 25, startTime + 86'400 * 7, startTime + 86'400 * 14);
+allIngredients[39] = std::make_unique<Ingredient>(
+    40, "Beijing Sauce", 50, 25, startTime + 86'400 * 7, startTime + 86'400 * 14);
+allIngredients[40] = std::make_unique<Ingredient>(
+    41, "Eggs", 50, 25, startTime + 86'400 * 7, startTime + 86'400 * 14);
+allIngredients[41] = std::make_unique<Ingredient>(
+    42, "Peas and Carrots", 50, 25, startTime + 86'400 * 7, startTime + 86'400 * 14);
+allIngredients[42] = std::make_unique<Ingredient>(
+    43, "Green Onions", 50, 25, startTime + 86'400 * 7, startTime + 86'400 * 14);
+allIngredients[43] = std::make_unique<Ingredient>(
+    44, "Cabbage", 50, 25, startTime + 86'400 * 7, startTime + 86'400 * 14);
+allIngredients[44] = std::make_unique<Ingredient>(
+    45, "Celery", 50, 25, startTime + 86'400 * 7, startTime + 86'400 * 14);
+allIngredients[45] = std::make_unique<Ingredient>(
+    46, "Kale", 50, 25, startTime + 86'400 * 7, startTime + 86'400 * 14);
+allIngredients[46] = std::make_unique<Ingredient>(
+    47, "Garlic", 50, 25, startTime + 86'400 * 7, startTime + 86'400 * 14);
+allIngredients[47] = std::make_unique<Ingredient>(
+    48, "Spring Roll Wrappers", 50, 25, startTime + 86'400 * 7, startTime + 86'400 * 14);
+allIngredients[48] = std::make_unique<Ingredient>(
+    49, "Wonton Wrappers", 50, 25, startTime + 86'400 * 7, startTime + 86'400 * 14);
+allIngredients[49] = std::make_unique<Ingredient>(
+    50, "Carrots", 50, 25, startTime + 86'400 * 7, startTime + 86'400 * 14);
+allIngredients[50] = std::make_unique<Ingredient>(
+    51, "Pomegranate Pineapple Lemonade", 50, 25, startTime + 86'400 * 7, startTime + 86'400 * 14);
+    //allIngredients[5] = new Ingredient(5, "", 50, 25, startTime + 86'400 * 7, startTime + 86'400 * 14);
 
 }
 
 void Generator::generateIngredientRelations() {
-    const int len = 67;
+    const int len = 85;
     allRelations.resize(len);
 
-    allRelations[0] = std::make_unique<IngredientRelation>(1, 2);
-    allRelations[1] = std::make_unique<IngredientRelation>(1, 3);
-    allRelations[2] = std::make_unique<IngredientRelation>(2, 4);
-    allRelations[3] = std::make_unique<IngredientRelation>(2, 5);
-    allRelations[4] = std::make_unique<IngredientRelation>(2, 6);
-    allRelations[5] = std::make_unique<IngredientRelation>(3, 7);
-    allRelations[6] = std::make_unique<IngredientRelation>(3, 8);
-    allRelations[7] = std::make_unique<IngredientRelation>(3, 3);
-    allRelations[8] = std::make_unique<IngredientRelation>(4, 1);
-    allRelations[9] = std::make_unique<IngredientRelation>(4, 9);
-    allRelations[10] = std::make_unique<IngredientRelation>(4, 8);
-    allRelations[11] = std::make_unique<IngredientRelation>(5, 8);
-    allRelations[12] = std::make_unique<IngredientRelation>(5, 10);
-    allRelations[13] = std::make_unique<IngredientRelation>(5, 11);
-    allRelations[14] = std::make_unique<IngredientRelation>(5, 12);
-    allRelations[15] = std::make_unique<IngredientRelation>(6, 1);
-    allRelations[16] = std::make_unique<IngredientRelation>(6, 8);
-    allRelations[17] = std::make_unique<IngredientRelation>(6, 13);
-    allRelations[18] = std::make_unique<IngredientRelation>(7, 1);
-    allRelations[19] = std::make_unique<IngredientRelation>(7, 14);
-    allRelations[20] = std::make_unique<IngredientRelation>(8, 1);
-    allRelations[21] = std::make_unique<IngredientRelation>(8, 8);
-    allRelations[22] = std::make_unique<IngredientRelation>(8, 12);
-    allRelations[23] = std::make_unique<IngredientRelation>(9, 1);
-    allRelations[24] = std::make_unique<IngredientRelation>(9, 8);
-    allRelations[25] = std::make_unique<IngredientRelation>(9, 10);
-    allRelations[26] = std::make_unique<IngredientRelation>(10, 1);
-    allRelations[27] = std::make_unique<IngredientRelation>(10, 10);
-    allRelations[28] = std::make_unique<IngredientRelation>(11, 3);
-    allRelations[29] = std::make_unique<IngredientRelation>(11, 8);
-    allRelations[30] = std::make_unique<IngredientRelation>(11, 13);
-    allRelations[31] = std::make_unique<IngredientRelation>(11, 10);
-    allRelations[32] = std::make_unique<IngredientRelation>(12, 3);
-    allRelations[33] = std::make_unique<IngredientRelation>(12, 13);
-    allRelations[34] = std::make_unique<IngredientRelation>(12, 10);
-    allRelations[35] = std::make_unique<IngredientRelation>(12, 12);
-    allRelations[36] = std::make_unique<IngredientRelation>(13, 15);
-    allRelations[37] = std::make_unique<IngredientRelation>(14, 15);
-    allRelations[38] = std::make_unique<IngredientRelation>(14, 8);
-    allRelations[39] = std::make_unique<IngredientRelation>(14, 13);
-    allRelations[40] = std::make_unique<IngredientRelation>(15, 16);
-    allRelations[41] = std::make_unique<IngredientRelation>(15, 13);
-    allRelations[42] = std::make_unique<IngredientRelation>(15, 8);
-    allRelations[43] = std::make_unique<IngredientRelation>(15, 10);
-    allRelations[44] = std::make_unique<IngredientRelation>(16, 8);
-    allRelations[45] = std::make_unique<IngredientRelation>(16, 10);
-    allRelations[46] = std::make_unique<IngredientRelation>(17, 8);
-    allRelations[47] = std::make_unique<IngredientRelation>(17, 10);
-    allRelations[48] = std::make_unique<IngredientRelation>(17, 12);
-    allRelations[49] = std::make_unique<IngredientRelation>(18, 1);
-    allRelations[50] = std::make_unique<IngredientRelation>(18, 8);
-    allRelations[51] = std::make_unique<IngredientRelation>(18, 10);
-    allRelations[52] = std::make_unique<IngredientRelation>(18, 13);
-    allRelations[53] = std::make_unique<IngredientRelation>(19, 17);
-    allRelations[54] = std::make_unique<IngredientRelation>(19, 10);
-    allRelations[55] = std::make_unique<IngredientRelation>(19, 8);
-    allRelations[56] = std::make_unique<IngredientRelation>(20, 18);
-    allRelations[57] = std::make_unique<IngredientRelation>(20, 19);
-    allRelations[58] = std::make_unique<IngredientRelation>(21,22);
-    allRelations[59] = std::make_unique<IngredientRelation>(22,23);
-    allRelations[60] = std::make_unique<IngredientRelation>(23,24);
-    allRelations[61] = std::make_unique<IngredientRelation>(24,25);
-    allRelations[62] = std::make_unique<IngredientRelation>(25, 26);
-    allRelations[63] = std::make_unique<IngredientRelation>(26, 27);
-    allRelations[64] = std::make_unique<IngredientRelation>(27, 20);
-    allRelations[65] = std::make_unique<IngredientRelation>(27, 21);
-    allRelations[66] = std::make_unique<IngredientRelation>(28, 28);
-    //allRelations[6] = new IngredientRelation();
+    // 1: Cantonese BBQ Brisket
+    allRelations[0] = std::make_unique<IngredientRelation>(1, 3);   // Beef
+    allRelations[1] = std::make_unique<IngredientRelation>(1, 2);   // BBQ Sauce
+    allRelations[2] = std::make_unique<IngredientRelation>(1, 29);  // Onions
+    allRelations[3] = std::make_unique<IngredientRelation>(1, 10);  // Seasoning Blend
+
+    // 2: Honey Walnut Shrimp
+    allRelations[4] = std::make_unique<IngredientRelation>(2, 4);   // Shrimp
+    allRelations[5] = std::make_unique<IngredientRelation>(2, 5);   // Honey Walnut Sauce
+    allRelations[6] = std::make_unique<IngredientRelation>(2, 6);   // Walnuts
+
+    // 3: Black Pepper Sirloin Steak
+    allRelations[7] = std::make_unique<IngredientRelation>(3, 3);   // Beef
+    allRelations[8] = std::make_unique<IngredientRelation>(3, 7);   // Black Pepper Sauce
+    allRelations[9] = std::make_unique<IngredientRelation>(3, 12);  // Bell Peppers
+    allRelations[10] = std::make_unique<IngredientRelation>(3, 29); // Onions
+
+    // 4: Mushroom Chicken
+    allRelations[11] = std::make_unique<IngredientRelation>(4, 1);  // Chicken
+    allRelations[12] = std::make_unique<IngredientRelation>(4, 9);  // Mushrooms
+    allRelations[13] = std::make_unique<IngredientRelation>(4, 32); // Zucchini
+    allRelations[14] = std::make_unique<IngredientRelation>(4, 13); // Soy Sauce
+
+    // 5: Kung Pao Chicken
+    allRelations[15] = std::make_unique<IngredientRelation>(5, 1);  // Chicken
+    allRelations[16] = std::make_unique<IngredientRelation>(5, 11); // Peanuts
+    allRelations[17] = std::make_unique<IngredientRelation>(5, 12); // Bell Peppers
+    allRelations[18] = std::make_unique<IngredientRelation>(5, 29); // Onions
+    allRelations[19] = std::make_unique<IngredientRelation>(5, 33); // Water Chestnuts
+    allRelations[20] = std::make_unique<IngredientRelation>(5, 34); // Dried Chili Peppers
+    allRelations[21] = std::make_unique<IngredientRelation>(5, 35); // Kung Pao Sauce
+
+    // 6: String Bean Chicken Breast
+    allRelations[22] = std::make_unique<IngredientRelation>(6, 1);  // Chicken
+    allRelations[23] = std::make_unique<IngredientRelation>(6, 30); // Green Beans
+    allRelations[24] = std::make_unique<IngredientRelation>(6, 47); // Garlic
+    allRelations[25] = std::make_unique<IngredientRelation>(6, 13); // Soy Sauce
+
+    // 7: The Original Orange Chicken
+    allRelations[26] = std::make_unique<IngredientRelation>(7, 1);  // Chicken
+    allRelations[27] = std::make_unique<IngredientRelation>(7, 14); // Orange Sauce
+
+    // 8: SweetFire Chicken Breast
+    allRelations[28] = std::make_unique<IngredientRelation>(8, 1);  // Chicken
+    allRelations[29] = std::make_unique<IngredientRelation>(8, 12); // Bell Peppers
+    allRelations[30] = std::make_unique<IngredientRelation>(8, 29); // Onions
+    allRelations[31] = std::make_unique<IngredientRelation>(8, 36); // SweetFire Sauce
+
+    // 9: Honey Sesame Chicken Breast
+    allRelations[32] = std::make_unique<IngredientRelation>(9, 1);  // Chicken
+    allRelations[33] = std::make_unique<IngredientRelation>(9, 12); // Bell Peppers
+    allRelations[34] = std::make_unique<IngredientRelation>(9, 43); // Green Onions
+    allRelations[35] = std::make_unique<IngredientRelation>(9, 37); // Honey Sesame Sauce
+
+    // 10: Grilled Teriyaki Chicken
+    allRelations[36] = std::make_unique<IngredientRelation>(10, 1);  // Chicken
+    allRelations[37] = std::make_unique<IngredientRelation>(10, 38); // Teriyaki Sauce
+
+    // 11: Broccoli Beef
+    allRelations[38] = std::make_unique<IngredientRelation>(11, 3);  // Beef
+    allRelations[39] = std::make_unique<IngredientRelation>(11, 31); // Broccoli
+    allRelations[40] = std::make_unique<IngredientRelation>(11, 39); // Broccoli Beef Sauce
+
+    // 12: Beijing Beef
+    allRelations[41] = std::make_unique<IngredientRelation>(12, 3);  // Beef
+    allRelations[42] = std::make_unique<IngredientRelation>(12, 12); // Bell Peppers
+    allRelations[43] = std::make_unique<IngredientRelation>(12, 29); // Onions
+    allRelations[44] = std::make_unique<IngredientRelation>(12, 40); // Beijing Sauce
+
+    // 13: White Steamed Rice
+    allRelations[45] = std::make_unique<IngredientRelation>(13, 15); // White Rice
+
+    // 14: Fried Rice
+    allRelations[46] = std::make_unique<IngredientRelation>(14, 15); // White Rice
+    allRelations[47] = std::make_unique<IngredientRelation>(14, 41); // Eggs
+    allRelations[48] = std::make_unique<IngredientRelation>(14, 42); // Peas and Carrots
+    allRelations[49] = std::make_unique<IngredientRelation>(14, 43); // Green Onions
+    allRelations[50] = std::make_unique<IngredientRelation>(14, 13); // Soy Sauce
+
+    // 15: Chow Mein
+    allRelations[51] = std::make_unique<IngredientRelation>(15, 16); // Chow Mein Noodles
+    allRelations[52] = std::make_unique<IngredientRelation>(15, 44); // Cabbage
+    allRelations[53] = std::make_unique<IngredientRelation>(15, 45); // Celery
+    allRelations[54] = std::make_unique<IngredientRelation>(15, 29); // Onions
+    allRelations[55] = std::make_unique<IngredientRelation>(15, 13); // Soy Sauce
+
+    // 16: Super Greens
+    allRelations[56] = std::make_unique<IngredientRelation>(16, 31); // Broccoli
+    allRelations[57] = std::make_unique<IngredientRelation>(16, 46); // Kale
+    allRelations[58] = std::make_unique<IngredientRelation>(16, 44); // Cabbage
+    allRelations[59] = std::make_unique<IngredientRelation>(16, 47); // Garlic
+
+    // 17: Veggie Spring Roll
+    allRelations[60] = std::make_unique<IngredientRelation>(17, 48); // Spring Roll Wrappers
+    allRelations[61] = std::make_unique<IngredientRelation>(17, 44); // Cabbage
+    allRelations[62] = std::make_unique<IngredientRelation>(17, 50); // Carrots
+    allRelations[63] = std::make_unique<IngredientRelation>(17, 45); // Celery
+    allRelations[64] = std::make_unique<IngredientRelation>(17, 10); // Seasoning Blend
+
+    // 18: Chicken Egg Roll
+    allRelations[65] = std::make_unique<IngredientRelation>(18, 48); // Spring Roll Wrappers
+    allRelations[66] = std::make_unique<IngredientRelation>(18, 1);  // Chicken
+    allRelations[67] = std::make_unique<IngredientRelation>(18, 44); // Cabbage
+    allRelations[68] = std::make_unique<IngredientRelation>(18, 50); // Carrots
+    allRelations[69] = std::make_unique<IngredientRelation>(18, 45); // Celery
+    allRelations[70] = std::make_unique<IngredientRelation>(18, 10); // Seasoning Blend
+
+    // 19: Cream Cheese Rangoon
+    allRelations[71] = std::make_unique<IngredientRelation>(19, 17); // Cream Cheese
+    allRelations[72] = std::make_unique<IngredientRelation>(19, 49); // Wonton Wrappers
+
+    // 20: Watermelon Mango Flavored Refresher
+    allRelations[73] = std::make_unique<IngredientRelation>(20, 18); // Watermelon Mango Refresher
+
+    // 21: Fanta Orange
+    allRelations[74] = std::make_unique<IngredientRelation>(21, 22); // Fanta Orange
+
+    // 22: Dr Pepper
+    allRelations[75] = std::make_unique<IngredientRelation>(22, 23); // Dr Pepper
+
+    // 23: Dasani
+    allRelations[76] = std::make_unique<IngredientRelation>(23, 24); // Dasani Water
+
+    // 24: Smartwater
+    allRelations[77] = std::make_unique<IngredientRelation>(24, 25); // Smartwater
+
+    // 25: Sprite
+    allRelations[78] = std::make_unique<IngredientRelation>(25, 26); // Sprite
+
+    // 26: Minute Maid Lemonade
+    allRelations[79] = std::make_unique<IngredientRelation>(26, 27); // Minute Maid Lemonade
+
+    // 27: Pomegranate Pineapple Flavored Lemonade
+    allRelations[80] = std::make_unique<IngredientRelation>(27, 51); // Pomegranate Pineapple Lemonade
+
+    // 28: Coca-Cola Zero Sugar
+    allRelations[81] = std::make_unique<IngredientRelation>(28, 28); // Coca-Cola Zero Sugar
+
+    // 29: Hot Orange Chicken
+    allRelations[82] = std::make_unique<IngredientRelation>(29, 1);  // Chicken
+    allRelations[83] = std::make_unique<IngredientRelation>(29, 14); // Orange Sauce
+    allRelations[84] = std::make_unique<IngredientRelation>(29, 34); // Dried Chili Peppers
+    //allRelations[8] = new IngredientRelation();
 }
