@@ -83,6 +83,13 @@ public final class ManagerRepository {
     }
 
 
+    /**
+     * Loads everything the manager dashboard shows: sales, stock, product usage, recent receipts, the active menu,
+     * and today's X report up to the current time.
+     *
+     * @return the dashboard data
+     * @throws Exception if the database query fails
+     */
     public ManagerData loadDashboard() throws Exception {
         List<SalesRecord> sales = new ArrayList<>();
         List<StockRecord> stock;
@@ -131,7 +138,7 @@ public final class ManagerRepository {
                     "SELECT EXTRACT(HOUR FROM receipt_timestamp) AS hour, COUNT(*) as order_count, SUM(total_cost) AS total_sales "
                             + "FROM (SELECT r.receipt_id, r.receipt_timestamp, SUM(ri.price_at_sale) AS total_cost "
                             + "FROM receipt r JOIN receipt_item ri ON ri.receipt_id = r.receipt_id "
-                            + "WHERE r.receipt_timestamp >= CURRENT_DATE AND r.receipt_timestamp <= date_trunc('hour', current_timestamp) "
+                            + "WHERE r.receipt_timestamp >= CURRENT_DATE AND r.receipt_timestamp <= current_timestamp "
                             + "GROUP BY r.receipt_id, r.receipt_timestamp) AS receipt "
                             + "GROUP BY EXTRACT(HOUR FROM receipt_timestamp) ORDER BY hour")) {
                 while (resultSet.next())
@@ -346,6 +353,12 @@ public final class ManagerRepository {
         }
     }
 
+    /**
+     * Loads today's X report: order count and sales per hour, from midnight up to the current time.
+     *
+     * @return one row per hour that had sales
+     * @throws Exception if the database query fails
+     */
     public List<XRecord> loadXReport() throws Exception {
         List<XRecord> records = new ArrayList<>();
         try (Connection connection = DatabaseConnection.open();
@@ -353,7 +366,7 @@ public final class ManagerRepository {
                         "SELECT EXTRACT(HOUR FROM receipt_timestamp) AS hour, COUNT(*) as order_count, SUM(total_cost) AS total_sales "
                                 + "FROM (SELECT r.receipt_id, r.receipt_timestamp, SUM(ri.price_at_sale) AS total_cost "
                                 + "FROM receipt r JOIN receipt_item ri ON ri.receipt_id = r.receipt_id "
-                                + "WHERE r.receipt_timestamp >= CURRENT_DATE AND r.receipt_timestamp <= date_trunc('hour', current_timestamp) "
+                                + "WHERE r.receipt_timestamp >= CURRENT_DATE AND r.receipt_timestamp <= current_timestamp "
                                 + "GROUP BY r.receipt_id, r.receipt_timestamp) AS receipt "
                                 + "GROUP BY EXTRACT(HOUR FROM receipt_timestamp) ORDER BY hour")) {
             try (ResultSet results = statement.executeQuery()) {

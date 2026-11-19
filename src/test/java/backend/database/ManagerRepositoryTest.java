@@ -2,6 +2,7 @@ package backend.database;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.Mockito.mockStatic;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -9,6 +10,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import backend.api.ApiErrors;
 import backend.api.ManagerApi;
+import backend.models.XRecord;
 import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -16,6 +18,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.time.LocalTime;
+import java.time.ZoneOffset;
 import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -155,6 +159,68 @@ class ManagerRepositoryTest {
         mvc.perform(get("/api/manager/menu/10/ingredients"))
                 .andExpect(status().isInternalServerError())
                 .andExpect(jsonPath("$.error").value("Database request failed"));
+    }
+
+    /**
+     * Picks a session time zone that puts the database clock at 12:30:00 local time right now, so the X report
+     * window (midnight to now) has a full earlier hour behind it and room for a future sale later today, whatever
+     * the real time is.
+     *
+     * @return a fixed UTC offset such as "+05:17:23"
+     */
+    private static String zoneAtHalfPastNoon() {
+        int utcSecond = LocalTime.now(ZoneOffset.UTC).toSecondOfDay();
+        int offsetSeconds = Math.floorMod(12 * 3600 + 30 * 60 - utcSecond + 12 * 3600, 24 * 3600) - 12 * 3600;
+        return offsetSeconds == 0 ? "UTC" : ZoneOffset.ofTotalSeconds(offsetSeconds).getId();
+    }
+
+    /**
+     * Points the repository at a session whose clock reads about 12:30, then inserts one sale in the current hour
+     * (12:30), one in an earlier hour (11:30), and one ten minutes in the future (12:40).
+     *
+     * @throws SQLException if the inserts fail
+     */
+    private void insertXReportSales() throws SQLException {
+        String url = URL + ";TIME ZONE=" + zoneAtHalfPastNoon();
+        db.when(DatabaseConnection::open).thenAnswer(i -> DriverManager.getConnection(url));
+        try (Connection c = DriverManager.getConnection(url); Statement s = c.createStatement()) {
+            s.execute("INSERT INTO receipt VALUES (1, CURRENT_TIMESTAMP), (2, CURRENT_TIMESTAMP - INTERVAL '1' HOUR), "
+                    + "(3, CURRENT_TIMESTAMP + INTERVAL '10' MINUTE)");
+            s.execute("INSERT INTO receipt_item VALUES (1, 1, 10, 1, 8.30), (2, 2, 20, 1, 4.40), (3, 3, 10, 1, 100.00)");
+        }
+    }
+
+    /**
+     * Asserts the report has exactly the earlier-hour sale in hour 11 and the current-hour sale in hour 12, and
+     * nothing from the future sale.
+     *
+     * @param report the X report rows to check
+     */
+    private static void assertCurrentAndEarlierSalesOnly(List<XRecord> report) {
+        assertThat(report).extracting(XRecord::getHour, XRecord::getQuantity, XRecord::getRevenue)
+                .containsExactly(tuple("11", 1L, 4.40), tuple("12", 1L, 8.30));
+    }
+
+    /**
+     * Regression test: loadXReport includes sales from the current hour and earlier hours, and excludes future ones.
+     *
+     * @throws Exception if the database setup or query fails
+     */
+    @Test
+    void xReportIncludesCurrentHourAndEarlierSalesButNotFutureOnes() throws Exception {
+        insertXReportSales();
+        assertCurrentAndEarlierSalesOnly(repository.loadXReport());
+    }
+
+    /**
+     * Regression test: the X report inside loadDashboard applies the same time window as loadXReport.
+     *
+     * @throws Exception if the database setup or query fails
+     */
+    @Test
+    void dashboardXReportIncludesCurrentHourAndEarlierSalesButNotFutureOnes() throws Exception {
+        insertXReportSales();
+        assertCurrentAndEarlierSalesOnly(repository.loadDashboard().getX());
     }
 
     @Test
