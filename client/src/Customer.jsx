@@ -14,9 +14,9 @@ const GRID = "flex grid grid-cols-3 gap-[5px] border-t border-gray-300 p-[15px] 
 const GRID_TITLE = "p-2.5 text-[22px] text-center font-bold w-full";
 const MEAL_GRID_TITLE = "p-2.5 text-[22px] text-center font-bold w-full flex items-center justify-between";
 const COL = "flex flex-col gap-[5px] border border-gray-300 p-[15px] overflow-auto min-w-0";
-const SELECTED = "border-2 border-brand";
 const BUTTON_TWO = "bg-brand px-4 py-2 text-white hover:bg-brand2 border-none";
 const MENU_TILE = "border-1 shadow-lg border-gray-200 flex flex-col items-center gap-2 rounded-[10px] hover:border-brand hover:shadow-none";
+const SELECTED = "border-2 border-brand flex flex-col items-center rounded-[10px]";
 const INFO = "absolute top-1 left-1 rounded-full border-gray-500 text-gray-500 !text-[10px] !min-h-0 !px-1.5 !py-0.75 hover:border-gray-900 hover:text-gray-900 hover:font-bold";
 const CLOSE = "absolute top-1 right-1 border-none text-gray-500" 
 
@@ -177,7 +177,7 @@ export default function Customer({ onChangeView }) {
     
     if (category === CATEGORY.MAIN) {
       const needed = MEAL_SIZES[selectedSize].mains;
-      return `${pendingMains.length}/${needed} main`;
+      return `${pendingMains.length}/${needed} main${needed > 1 ? "s" : ""}`;
     }
     
     if (category === CATEGORY.SIDE) {
@@ -216,9 +216,12 @@ export default function Customer({ onChangeView }) {
       </h3>
       <div className={GRID}>
         {menu.filter((r) => r.categoryId === category).map((r) => (
-        <button key={r.itemId} className={isSelected(r) ? SELECTED : MENU_TILE} onClick={() => pressMenuItem(r)}>
-          {r.name}
-        </button>
+        <div key={r.itemId} className={`${isSelected(r) ? SELECTED : MENU_TILE} relative`} onClick={() => pressMenuItem(r)}>
+          <button className={INFO}
+          onClick={(e) => { e.stopPropagation(); setNutritionDetails(r);}}>i</button>
+          <img src="" className="h-20 w-20 object-contain"/>
+          <span>{r.name}</span>
+        </div>
       ))}
       </div>
     </section>
@@ -266,8 +269,8 @@ export default function Customer({ onChangeView }) {
         <fieldset className="contents" disabled={locked}>
           {mealGrid(CATEGORY.MAIN, "Mains", mainsRef)}
           {mealGrid(CATEGORY.SIDE, "Sides", sidesRef)}
-          <div className="border-t-1 border-gray-300 absolute inset-x-0 bottom-0 z-10 p-4">
-            <div className="flex w-full justify-between items-center gap-4 rounded bg-white px-6 py-3 text-black">
+          <div className="border-t-1 border-gray-300 sticky inset-x-0 bottom-0 z-10 p-4 bg-white">
+            <div className="flex w-full justify-between items-center gap-4 rounded px-6 py-3 text-black">
               <span className="font-bold text-2xl">
                 {selectedSize}
               </span>
@@ -276,7 +279,11 @@ export default function Customer({ onChangeView }) {
                   Back
                 </button>
                 <button className={BUTTON_TWO} onClick={() => addPendingMealToCart()}>
-                Add to Cart
+                Add to Cart {
+                  selectedSize && pendingMains.length > 0 && pendingSide ? 
+                  money(mealLine(selectedSize, pendingMains, pendingSide).unitCents) :
+                  ""
+                }
                 </button>
               </div>
             </div>
@@ -284,14 +291,16 @@ export default function Customer({ onChangeView }) {
         </fieldset>
         </div> ) : 
         ( <>
-        <h3 className={GRID_TITLE}>Meal</h3>
-        <section ref={mealRef} className={GRID}>
+        <section ref={mealRef} className="flex flex-col">
+          <h3 className={GRID_TITLE}>Meals</h3>
+          <div className={GRID}>
           {Object.entries(MEAL_SIZES).map(([size, { label }]) => (
             <button key={size} className={MENU_TILE} onClick={() => selectSize(size)}>
               <img src="" className="h-20 w-20 object-contain"/>
               <span>{label}</span>
             </button>
           ))}
+          </div>
         </section>
 
 
