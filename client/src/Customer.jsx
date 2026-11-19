@@ -15,9 +15,10 @@ const GRID_TITLE = "p-2.5 text-[22px] text-center font-bold w-full";
 const MEAL_GRID_TITLE = "p-2.5 text-[22px] text-center font-bold w-full flex items-center justify-between";
 const COL = "flex flex-col gap-[5px] border border-gray-300 p-[15px] overflow-auto min-w-0";
 const SELECTED = "border-2 border-brand";
-const BUTTON_TWO = "bg-brand px-4 py-2 text-white hover:bg-brand2";
-const MENU_TILE = "border-1 shadow-xl border-gray-200 flex flex-col items-center gap-2 rounded-[10px] hover:border-brand hover:shadow-none";
-const INFO = "absolute top-1 left-1 rounded-full border-gray-500 text-gray-500 !text-[10px] !min-h-0 !px-1.5 !py-0.75 hover:border-gray-900 hover:text-gray-900 hover:font-bold"; 
+const BUTTON_TWO = "bg-brand px-4 py-2 text-white hover:bg-brand2 border-none";
+const MENU_TILE = "border-1 shadow-lg border-gray-200 flex flex-col items-center gap-2 rounded-[10px] hover:border-brand hover:shadow-none";
+const INFO = "absolute top-1 left-1 rounded-full border-gray-500 text-gray-500 !text-[10px] !min-h-0 !px-1.5 !py-0.75 hover:border-gray-900 hover:text-gray-900 hover:font-bold";
+const CLOSE = "absolute top-1 right-1 border-none text-gray-500" 
 
 
 export default function Customer({ onChangeView }) {
@@ -324,8 +325,8 @@ export default function Customer({ onChangeView }) {
 
       {notice && <Notice key={notice.id} notice={notice} onClose={() => setNotice(null)} />}
       {itemDetails && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="rounded-[10px] text-[20px] bg-white p-6 flex flex-col gap-3"> 
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setItemDetails(null)}>
+          <div className="rounded-[10px] text-[20px] bg-white p-6 flex flex-col gap-3 relative"> 
             <div className="border-b border-gray-300 py-3">{itemDetails.name}</div>
             <button className={BUTTON_TWO} onClick={() => {
               pressMenuItem(itemDetails); 
@@ -333,19 +334,19 @@ export default function Customer({ onChangeView }) {
             }}>
               Add to Cart {money(itemDetails.priceCents)}
             </button>
-            <button className={BUTTON_TWO} onClick={() => {setItemDetails(null);}}>
-              Close
+            <button className={CLOSE} onClick={() => {setItemDetails(null);}}>
+              X
             </button> 
           </div>
         </div>
       )}
       {nutritionDetails && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="rounded-[10px] text-[20px] bg-white p-6 flex flex-col gap-3"> 
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setNutritionDetails(null)}>
+          <div className="rounded-[10px] text-[20px] bg-white p-6 flex flex-col gap-3 relative"> 
             <div className="border-b border-gray-300 py-3">{nutritionDetails.name}</div>
             <div className="text-[15px] whitespace-pre-line">{nutritionDetails.nutrition}</div>
-            <button className={BUTTON_TWO} onClick={() => {setNutritionDetails(null);}}>
-              Close
+            <button className={CLOSE} onClick={() => {setNutritionDetails(null);}}>
+              X
             </button> 
           </div>
         </div>
