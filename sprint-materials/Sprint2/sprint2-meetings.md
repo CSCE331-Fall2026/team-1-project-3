@@ -20,3 +20,8 @@ Mainly focused on splitting up bigger tasks into smaller tasks, and chose what t
 **Blockers:** None
 
 ## Meeting 3
+11/19/26
+*Attendance:* Samuel, Ashley, Sharaf, Colby
+**Last Time:** Finished up OAuth, locked down apis, adding nutrition information, and adding items to cart.
+**This Time:** Reviewing pull requests, fixing cashier view, and working on creating gui for kitchen staff.
+**Blockers:** Handling the database (hashing).
