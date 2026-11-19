@@ -150,7 +150,7 @@ string Item::toVals() const noexcept {
     outp += ", ";
     outp += std::to_string(category + 1);
     outp += ", '";
-    outp += nutrition;
+    outp += escapeSql(nutrition);
     outp += "', ";
     outp += std::to_string(price);
     outp += ", ";
