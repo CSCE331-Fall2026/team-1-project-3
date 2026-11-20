@@ -1140,7 +1140,9 @@ void Generator::generateUsers() {
         throw std::runtime_error("Failed to read password file header");
     }
 
-    allUsers.resize(totalEmployees);
+    allUsers.resize(totalEmployees + 1);
+
+    allUsers[0] = std::make_unique<User>(0, "root", "root", UserPerm::MANAGER);
 
     vector<int> fnameLines(totalEmployees);
     vector<int> lnameLines(totalEmployees);
@@ -1194,9 +1196,9 @@ void Generator::generateUsers() {
 
     for (size_t i = 0, id = 1; i < allLocations.size(); ++i) {
         for (int j = 0; j < EMPLOYEES_PER_LOCATION; ++j, ++id)
-            allUsers[id - 1] = std::make_unique<User>(id, names[id - 1], passwords[id - 1], UserPerm::CASHIER);
+            allUsers[id] = std::make_unique<User>(id, names[id - 1], passwords[id - 1], UserPerm::CASHIER);
         for (int j = 0; j < MANAGERS_PER_LOCATION; ++j, ++id)
-            allUsers[id - 1] = std::make_unique<User>(id, names[id - 1], passwords[id - 1], UserPerm::MANAGER);
+            allUsers[id] = std::make_unique<User>(id, names[id - 1], passwords[id - 1], UserPerm::MANAGER);
     }
 
     clockOutTime = currentDay + WORKSHIFT_SECONDS + OPENING_TIME_UNIX;
