@@ -56,7 +56,8 @@ public final class Dtos {
     }
 
     // ---- requests (boxed types so a missing field arrives as null and can be rejected) ----
-    public record CheckoutRequest(Integer locationId, Integer userId, java.util.List<Line> items) {
+    // AI generated, fixes from Pablo's review on PR #69, removed userId since the server takes it from the token
+    public record CheckoutRequest(Integer locationId, java.util.List<Line> items) {
         public record Line(Integer itemId, Integer quantity, Long listPriceCents, Long totalCents) {
         }
     }

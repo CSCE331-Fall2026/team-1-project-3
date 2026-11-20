@@ -6,8 +6,7 @@ import {
 import { Notice } from "./ui.jsx";
 
 
-const LOCATION_ID = 1; // TODO: take from login/session instead of constants
-const USER_ID = 3;
+const LOCATION_ID = 1;
 
 
 const GRID = "flex grid grid-cols-3 gap-[5px] border-t border-gray-300 p-[15px] overflow-auto min-w-0";
@@ -156,7 +155,8 @@ export default function Customer({ onChangeView }) {
     try {
       const { outcome } = await api("/checkout", {
         method: "POST",
-        body: { locationId: LOCATION_ID, userId: USER_ID, items: flattenCart(cartLines) },
+        // AI generated, fixes from Pablo's review on PR #69, kiosk orders dont send a user anymore
+        body: { locationId: LOCATION_ID, items: flattenCart(cartLines) },
       });
       if (outcome === "UNCERTAIN") return uncertain();
       if (outcome === "SUCCESS") {

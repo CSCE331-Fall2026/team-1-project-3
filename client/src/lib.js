@@ -1,3 +1,5 @@
+import { accessToken, forgetToken, startLogin } from "./auth.js";
+
 // Shared helpers: API client, money (integer cents instead of BigDecimal),
 // MealSize, and the CartLine / flattenCart logic.
 
@@ -15,16 +17,38 @@ export function parsePrice(text) {
   return cents <= MAX_PRICE_CENTS ? cents : null;
 }
 
-export async function api(path, { method = "GET", body, signal } = {}) {
-  const res = await fetch(`/api${path}`, {
+function send(path, method, body, signal) {
+  const headers = {};
+  if (body) {
+    headers["Content-Type"] = "application/json";
+  }
+  // send the login token if there is one, the server uses it to check the role
+  const token = accessToken();
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+  return fetch(`/api${path}`, {
     method,
-    headers: body ? { "Content-Type": "application/json" } : undefined,
+    headers,
     body: body ? JSON.stringify(body) : undefined,
     signal,
   });
+}
+
+export async function api(path, { method = "GET", body, signal } = {}) {
+  let res = await send(path, method, body, signal);
+  // AI generated, fixes from Pablo's review on PR #69 (old tokens breaking the menu after a restart)
+  // the server rejected our token (like after a restart), drop it and try again without it
+  // public stuff like the menu still works, and manager stuff sends you to log in again
+  if (res.status === 401 && accessToken()) {
+    forgetToken();
+    res = await send(path, method, body, signal);
+    if (res.status === 401) {
+      startLogin();
+    }
+  }
   const data = await res.json().catch(() => null);
   if (!res.ok) {
-    // err.status is only set when the server actually answered.
     const err = new Error(data?.error ?? res.statusText);
     err.status = res.status;
     throw err;
