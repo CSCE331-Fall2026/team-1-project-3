@@ -46,7 +46,7 @@ public final class CashierRepository {
         return dollars.movePointRight(2).longValueExact(); // throws on fractional cents, which fails the checkout
     }
 
-    public CheckoutOutcome checkout(int locationId, int userId,
+    public CheckoutOutcome checkout(int locationId, Integer userId,
             TreeMap<Integer, Integer> checkoutCart,
             TreeMap<Integer, BigDecimal> checkoutPrices,
             TreeMap<Integer, BigDecimal> checkoutTotals) {
@@ -91,7 +91,13 @@ public final class CashierRepository {
                         return CheckoutOutcome.REJECTED;
                     }
                     receipt.setInt(1, locationId);
-                    receipt.setInt(2, userId);
+                    // AI generated, fixes from Pablo's review on PR #69, kiosk orders have no user
+                    if (userId == null) {
+                        receipt.setNull(2, java.sql.Types.INTEGER);
+                    }
+                    else {
+                        receipt.setInt(2, userId);
+                    }
                     int receiptId;
                     try (ResultSet results = receipt.executeQuery()) {
                         if (!results.next())

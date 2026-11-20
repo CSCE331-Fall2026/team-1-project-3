@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class StaffAccounts implements UserDetailsService {
     private final UserRepository repository = new UserRepository();
+    private final PasswordCipher cipher = PasswordCipher.fromEnvironment();
 
     @Override
     public UserDetails loadUserByUsername(String username) {
@@ -25,8 +26,9 @@ public class StaffAccounts implements UserDetailsService {
         if (account == null) {
             throw new UsernameNotFoundException("No such user");
         }
-        // {noop} = plaintext password, if we switch to bcrypt hashes later they just need to start with {bcrypt}
-        String password = "{noop}" + account.password();
+        // AI generated, reads the encrypted passwords from PR #73
+        // decrypt it if the generator encrypted it, then {noop} = compare as plaintext
+        String password = "{noop}" + cipher.readable(account.password());
         return new StaffPrincipal(account.user().userId(), account.user().name(), password, account.user().perms());
     }
 }

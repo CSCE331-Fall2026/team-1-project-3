@@ -64,7 +64,7 @@ public class SecurityConfig {
         return http.build();
     }
 
-    // the api, manager stuff needs a manager token, everything else is public for the customer kiosk
+    // the api, manager stuff needs a manager token, /api/me needs any login, everything else is public for the customer kiosk
     // no sessions here since every request sends its own token
     @Bean
     @Order(2)
@@ -76,7 +76,9 @@ public class SecurityConfig {
         tokenToUser.setJwtGrantedAuthoritiesConverter(roles);
 
         http.securityMatcher("/api/**");
-        http.authorizeHttpRequests(auth -> auth.requestMatchers("/api/manager/**").hasRole("MANAGER").anyRequest().permitAll());
+        // AI generated, fixes from Pablo's review on PR #69, added /api/me for checking old tokens
+        http.authorizeHttpRequests(auth -> auth.requestMatchers("/api/manager/**").hasRole("MANAGER")
+                .requestMatchers("/api/me").authenticated().anyRequest().permitAll());
         http.oauth2ResourceServer(rs -> rs.jwt(jwt -> jwt.jwtAuthenticationConverter(tokenToUser)));
         http.sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
         http.csrf(csrf -> csrf.disable());

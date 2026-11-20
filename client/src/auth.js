@@ -119,6 +119,12 @@ export async function finishLogin() {
   return currentUser();
 }
 
+// AI generated, fixes from Pablo's review on PR #69 (old tokens after a server restart)
+// for when the server stops accepting the token, like after a restart
+export function forgetToken() {
+  removeStore(TOKEN_KEY);
+}
+
 export function logout() {
   removeStore(TOKEN_KEY);
   window.location.assign("/logout");

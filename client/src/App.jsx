@@ -4,6 +4,7 @@ import Manager from "./Manager.jsx";
 import Customer from "./Customer.jsx"
 import SignedIn from "./SignedIn.jsx";
 import { currentUser, finishLogin, logout, startLogin } from "./auth.js";
+import { api } from "./lib.js";
 
 // Which views each role can open, anyone can use customer view
 const ALLOWED_VIEWS = {
@@ -50,10 +51,18 @@ export default function App() {
   }, [view]);
 
   // logged in, show the signed in page, otherwise show sign in page
-  function openLogin() {
+  async function openLogin() {
     if (!currentUser()) {
       setUser(null);
       startLogin();
+      return;
+    }
+    // AI generated, fixes from Pablo's review on PR #69 (old tokens after a server restart)
+    // check the server still takes the token, if not api() already sent you to log in again
+    try {
+      setUser(await api("/me"));
+    }
+    catch {
       return;
     }
     setPreviousView(view);

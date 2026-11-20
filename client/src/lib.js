@@ -1,4 +1,4 @@
-import { accessToken } from "./auth.js";
+import { accessToken, forgetToken, startLogin } from "./auth.js";
 
 // Shared helpers: API client, money (integer cents instead of BigDecimal),
 // MealSize, and the CartLine / flattenCart logic.
@@ -17,7 +17,7 @@ export function parsePrice(text) {
   return cents <= MAX_PRICE_CENTS ? cents : null;
 }
 
-export async function api(path, { method = "GET", body, signal } = {}) {
+function send(path, method, body, signal) {
   const headers = {};
   if (body) {
     headers["Content-Type"] = "application/json";
@@ -27,12 +27,26 @@ export async function api(path, { method = "GET", body, signal } = {}) {
   if (token) {
     headers.Authorization = `Bearer ${token}`;
   }
-  const res = await fetch(`/api${path}`, {
+  return fetch(`/api${path}`, {
     method,
     headers,
     body: body ? JSON.stringify(body) : undefined,
     signal,
   });
+}
+
+export async function api(path, { method = "GET", body, signal } = {}) {
+  let res = await send(path, method, body, signal);
+  // AI generated, fixes from Pablo's review on PR #69 (old tokens breaking the menu after a restart)
+  // the server rejected our token (like after a restart), drop it and try again without it
+  // public stuff like the menu still works, and manager stuff sends you to log in again
+  if (res.status === 401 && accessToken()) {
+    forgetToken();
+    res = await send(path, method, body, signal);
+    if (res.status === 401) {
+      startLogin();
+    }
+  }
   const data = await res.json().catch(() => null);
   if (!res.ok) {
     const err = new Error(data?.error ?? res.statusText);
