@@ -50,7 +50,7 @@ public final class CashierRepository {
         final String SQL = "SELECT r.receipt_id, r.receipt_timestamp, r.status, ri.item_id, i.name, ri.quantity "
                 + "FROM receipt r JOIN receipt_item ri ON ri.receipt_id = r.receipt_id "
                 + "JOIN item i ON i.item_id = ri.item_id "
-                + "WHERE r.status = 'PENDING' ORDER BY r.receipt_id, ri.receipt_item_id";
+                + "WHERE r.status = 'PENDING' ORDER BY r.receipt_timestamp, r.receipt_id, ri.receipt_item_id";
 
         LinkedHashMap<Integer, KitchenOrderRecord> orders = new LinkedHashMap<>();
         try (

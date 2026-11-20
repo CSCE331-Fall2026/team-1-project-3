@@ -11,6 +11,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import backend.api.ApiErrors;
 import backend.api.KitchenApi;
 import backend.database.CashierRepository.CheckoutOutcome;
+import backend.models.KitchenOrderRecord;
 import com.zaxxer.hikari.HikariDataSource;
 import java.math.BigDecimal;
 import java.sql.Connection;
@@ -106,6 +107,19 @@ class KitchenOrdersTest {
                 .andExpect(jsonPath("$.length()").value(2))
                 .andExpect(jsonPath("$[0].items[0].name").value("Orange Chicken"))
                 .andExpect(jsonPath("$[1].items[0].name").value("Chow Mein"));
+    }
+
+    @Test
+    void queueSortsByTimestampNotReceiptId() throws Exception {
+        try (Connection c = pool.getConnection(); Statement s = c.createStatement()) {
+            s.execute("INSERT INTO receipt (receipt_id, location_id, user_id, receipt_timestamp) VALUES"
+                    + " (1, 1, 1, '2026-01-01 12:00'), (2, 1, 1, '2026-01-01 11:00')");
+            s.execute("INSERT INTO receipt_item (receipt_id, item_id, quantity, price_at_sale) VALUES"
+                    + " (1, 10, 1, 5.00), (2, 20, 1, 4.00), (2, 10, 1, 5.00)");
+        }
+        List<KitchenOrderRecord> orders = new CashierRepository().loadPendingOrders();
+        assertEquals(List.of(2, 1), orders.stream().map(KitchenOrderRecord::receiptId).toList());
+        assertEquals(List.of("Chow Mein", "Orange Chicken"), orders.get(0).items().stream().map(KitchenOrderRecord.Line::name).toList());
     }
 
     @Test
