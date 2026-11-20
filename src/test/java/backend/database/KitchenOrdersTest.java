@@ -31,7 +31,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 /**
  * Kitchen queue end to end: real checkout, then /api/kitchen/orders. Needs a disposable local PostgreSQL loaded with
- * DesignSql.sql then AddReceiptStatus.sql. Skipped unless TEST_DB_URL is set; it WIPES the tables, so only
+ * DesignSql.sql. Skipped unless TEST_DB_URL is set; it WIPES the tables, so only
  * localhost URLs are accepted.
  */
 class KitchenOrdersTest {

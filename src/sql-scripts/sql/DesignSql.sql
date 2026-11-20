@@ -137,6 +137,10 @@ CREATE TABLE receipt (
     user_id INTEGER,
     receipt_timestamp TIMESTAMP NOT NULL,
     customer VARCHAR(64),
+    -- Kitchen queue (issue #45). New checkouts start PENDING; the generator seeds history as COMPLETED.
+    status VARCHAR(16) NOT NULL DEFAULT 'PENDING',
+
+    CONSTRAINT chk_receipt_status CHECK (status IN ('PENDING', 'COMPLETED')),
 
     CONSTRAINT fk_receipt_location
         FOREIGN KEY (location_id)
@@ -187,6 +191,10 @@ CREATE INDEX idx_receipt_location_id
 
 CREATE INDEX idx_receipt_user_id
     ON receipt(user_id);
+
+-- The kitchen queue reads only pending rows; keeps that off a full scan of the receipt history.
+CREATE INDEX idx_receipt_pending
+    ON receipt(receipt_id) WHERE status = 'PENDING';
 
 CREATE INDEX idx_receipt_item_receipt_id
     ON receipt_item(receipt_id);
