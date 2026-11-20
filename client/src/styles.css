@@ -2,6 +2,7 @@
 
 @theme {
   --color-brand: #D61927; /* bg-brand, border-brand */
+  --color-brand2: #b12227;
   --font-sans: system-ui, sans-serif; /* preflight applies this to html */
 }
 

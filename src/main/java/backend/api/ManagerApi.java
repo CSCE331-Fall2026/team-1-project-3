@@ -122,7 +122,7 @@ public class ManagerApi {
         if (hasStart != hasEnd) return invalid("Provide both start and end");
         if (hasStart) return ResponseEntity.ok(points(repository.loadSalesGraph(start.trim(), end.trim())));
         List<Point> whole = repository.loadDashboard().getSales().stream()
-                .map(s -> new Point("#" + s.getID() + "-" + s.getName() + ' ' + s.getQuantity(), s.getQuantity()))
+                .map(s -> new Point("#" + s.getID() + "-" + s.getName(), s.getQuantity()))
                 .toList();
         return ResponseEntity.ok(whole);
     }
@@ -135,7 +135,7 @@ public class ManagerApi {
         if (hasStart != hasEnd) return invalid("Provide both start and end");
         if (hasStart) return ResponseEntity.ok(points(repository.loadStockGraph(start.trim(), end.trim())));
         List<Point> whole = repository.loadDashboard().getStockGraphRecord().stream()
-                .map(s -> new Point("#" + s.getID() + "-" + s.getName() + ' ' + s.getQuantity(), s.getQuantity()))
+                .map(s -> new Point("#" + s.getID() + "-" + s.getName(), s.getQuantity()))
                 .toList();
         return ResponseEntity.ok(whole);
     }

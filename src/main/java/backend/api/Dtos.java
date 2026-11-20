@@ -12,9 +12,9 @@ public final class Dtos {
     }
 
     // ---- responses ----
-    public record MenuItem(int itemId, String name, long priceCents, int categoryId) {
+    public record MenuItem(int itemId, String name, long priceCents, int categoryId, String nutrition) {
         public static MenuItem of(MenuRecord r) {
-            return new MenuItem(r.getItemID(), r.getName(), Money.toCents(r.getPrice()), r.getCategoryID());
+            return new MenuItem(r.getItemID(), r.getName(), Money.toCents(r.getPrice()), r.getCategoryID(), r.getNutrition());
         }
     }
 
