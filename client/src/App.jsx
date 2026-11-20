@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import Cashier from "./Cashier.jsx";
 import Manager from "./Manager.jsx";
 import Customer from "./Customer.jsx"
-import Login from "./Login.jsx";
+import SignedIn from "./SignedIn.jsx";
 import { currentUser, finishLogin, logout, startLogin } from "./auth.js";
 
 // Which views each role can open, anyone can use customer view
@@ -28,7 +28,7 @@ export default function App() {
       const loggedIn = await finishLogin();
       if (loggedIn) {
         setUser(loggedIn);
-        setView("login");
+        setView("signedIn");
       }
     }
     checkLogin();
@@ -38,8 +38,8 @@ export default function App() {
     if (view === "customer") {
       document.title = "Customer View";
     }
-    else if (view === "login") {
-      document.title = "Login";
+    else if (view === "signedIn") {
+      document.title = "Signed In";
     }
     else if (view === "cashier") {
       document.title = "Cashier View";
@@ -57,7 +57,7 @@ export default function App() {
       return;
     }
     setPreviousView(view);
-    setView("login");
+    setView("signedIn");
   }
 
   function goBack() {
@@ -65,18 +65,18 @@ export default function App() {
   }
 
   // views your role, if cant use go back to customer, api blocks aswell
-  if (view !== "login" && !allowedViews.includes(view)) {
+  if (view !== "signedIn" && !allowedViews.includes(view)) {
     return (<Customer onChangeView={openLogin} />);
   }
 
   if (view === "customer"){
     return (<Customer onChangeView={openLogin} />);
   }
-  else if (view === "login") {
+  else if (view === "signedIn") {
     if (!user) {
       return (<Customer onChangeView={openLogin} />);
     }
-    return (<Login user={user} allowedViews={allowedViews} onPick={setView} onLogout={logout} onBack={goBack} />);
+    return (<SignedIn user={user} allowedViews={allowedViews} onPick={setView} onLogout={logout} onBack={goBack} />);
   }
   else if (view === "cashier") {
     return (<Cashier onChangeView={openLogin} />)
