@@ -7,13 +7,6 @@
 -- Check: SELECT status, COUNT(*) FROM receipt GROUP BY status;  -- history is all COMPLETED right after
 BEGIN;
 
-ALTER TABLE receipt
-    ADD COLUMN status VARCHAR(16) NOT NULL DEFAULT 'COMPLETED'
-        CONSTRAINT chk_receipt_status CHECK (status IN ('PENDING', 'COMPLETED'));
-
 ALTER TABLE receipt ALTER COLUMN status SET DEFAULT 'PENDING';
-
--- The kitchen queue reads only pending rows; keeps that off a full scan of the receipt history.
-CREATE INDEX idx_receipt_pending ON receipt (receipt_id) WHERE status = 'PENDING';
 
 COMMIT;
