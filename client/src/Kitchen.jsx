@@ -74,28 +74,22 @@ function TicketsTab({ notify }) {
         }
     };
 
-    //TODO uncomment when status is implemented
-    //const pendingOrders = orders?.filter((order) => order.status === "PENDING");
-    const displayedOrders = orders?.slice(0, 8);
+    const pendingOrders = orders?.filter((order) => order.status === "PENDING");
 
     //loading messages if no orders or loading
     if (orders === null) {
         return <p>Loading tickets...</p>;
     }
 
-    /*TODO uncomment when status is implemented
     if (pendingOrders.length === 0) {
         return <p>No pending orders.</p>;
-    }*/
-    if (displayedOrders.length === 0) {
-    return <p>No orders.</p>;
     }
 
-    //{pendingOrders.map((order) => { TODO: line 95
+
     return (
         <div className="w-full overflow-x-auto pb-4">
         <div className="flex items-stretch gap-4 w-max min-w-full">
-            {displayedOrders.map((order) => {
+            {pendingOrders.map((order) => {
             const busy = busyIds.includes(order.orderId);
 
             return (
@@ -108,7 +102,7 @@ function TicketsTab({ notify }) {
                 </div>
 
                 <div className="flex-1 p-4">
-                <h3 className="font-bold text-gray-700 mb-2">Order Items</h3>
+                <h3 className="font-bold text-black mb-2">Order Items</h3>
                 <ul className="space-y-2">
                     {order.items.map((item, index) => (
                     <li key={`${item.itemId}-${index}`} className="flex justify-between gap-3 text-black border-b border-gray-100 pb-1">
