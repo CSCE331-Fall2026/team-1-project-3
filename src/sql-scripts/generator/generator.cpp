@@ -7,9 +7,7 @@
 #include <algorithm>
 #include <ctime>
 #include <fstream>
-#include <openssl/evp.h>
-#include <sstream>
-#include <iomanip>
+
 #include "common.h"
 
 using namespace std;
@@ -66,6 +64,32 @@ int main() {
 
     g->generateNDays(LENGTH_IN_DAYS);
 
+    const char* keyVal = std::getenv("GEN_KEY");
+
+    std::array<unsigned char, crypto::KeySize> key;
+    if (keyVal == nullptr) {
+        RAND_bytes(key.data(), static_cast<int>(key.size()));
+        for (size_t i = 0; i < key.size(); ++i)
+            cout << (int)key[i] << ' ';
+        cout << endl;
+    }
+    else {
+        size_t idx = crypto::KeySize - 1;
+        string str = {keyVal};
+        size_t start = 0;
+        size_t end = str.find(' ');
+
+        while (end != std::string::npos) {
+            key[idx] = (unsigned char)std::stoi(str.substr(start, end - start));
+            idx--;
+            start = end + 1;
+            end = str.find(' ', start);
+        }
+        key[0] = (unsigned char)std::stoi(str.substr(start));
+    }
+
+    Generator::key = key;
+
     const char* filename = "../sql/Script.sql";
     if (FAST_MODE)
         g->writeAllFast(filename);
@@ -89,6 +113,9 @@ int main() {
 
 //Init the global time buffer.
     char Generator::timeBuf[128];
+
+// key var
+    std::array<unsigned char, crypto::KeySize> Generator::key;
 
 // SQL CONVERT FUNCTIONS
 
@@ -128,19 +155,28 @@ string User::toSql() const noexcept {
     return "INSERT INTO app_user (user_id, name, password, perms)";
 }
 string User::toVals() const noexcept {
-    string outp{"("};
+    try  {
+        string outp{"("};
 
-    outp += std::to_string(userId);
-    outp += ", '";
-    outp += escapeSql(name);
-    outp += "', '";
-    outp += escapeSql(Generator::sha256(password));
-    outp += "', '";
-    outp += to_string(perm);
-    outp += '\'';
+        outp += std::to_string(userId);
+        outp += ", '";
+        outp += escapeSql(name);
+        outp += "', '";
+        outp += escapeSql(crypto::encryptString(password, Generator::key));
+        outp += "', '";
+        outp += to_string(perm);
+        outp += '\'';
 
-
-    return outp + ")";
+        return outp + ")";
+    }
+    catch (const std::exception& e) {
+        cerr << "There was an issue encrypting the password!!!\n" << e.what() << endl;
+        return "";
+    }
+    catch (...) {
+        cerr << "Unknown exception happened while encrypting the password string!!!" << endl;
+        return "";
+    }
 }
 
 string Item::toSql() const noexcept {
@@ -292,46 +328,6 @@ string Timetable::toVals() const noexcept {
 }
 
 // MISC FUNCTIONS
-
-// AI Generated function for hashing the passwords (from google's ai)
-std::string Generator::sha256(const std::string& input) {
-    // 1. Create and initialize the digest context
-    EVP_MD_CTX* context = EVP_MD_CTX_new();
-    if (!context) {
-        throw std::runtime_error("Failed to create EVP_MD_CTX");
-    }
-
-    // 2. Initialize the SHA-256 digest operation
-    if (EVP_DigestInit_ex(context, EVP_sha256(), nullptr) != 1) {
-        EVP_MD_CTX_free(context);
-        throw std::runtime_error("EVP_DigestInit_ex failed");
-    }
-
-    // 3. Feed the data into the context (can be called multiple times for chunks/files)
-    if (EVP_DigestUpdate(context, input.data(), input.size()) != 1) {
-        EVP_MD_CTX_free(context);
-        throw std::runtime_error("EVP_DigestUpdate failed");
-    }
-
-    // 4. Finalize the hash and retrieve the digest
-    unsigned char hash[EVP_MAX_MD_SIZE];
-    unsigned int lengthOfHash = 0;
-    if (EVP_DigestFinal_ex(context, hash, &lengthOfHash) != 1) {
-        EVP_MD_CTX_free(context);
-        throw std::runtime_error("EVP_DigestFinal_ex failed");
-    }
-
-    // 5. Clean up the context
-    EVP_MD_CTX_free(context);
-
-    // 6. Convert raw bytes to a hex string
-    std::stringstream ss;
-    for (unsigned int i = 0; i < lengthOfHash; ++i) {
-        ss << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(hash[i]);
-    }
-
-    return ss.str();
-}
 
 ostream& operator<<(ostream& os, const Scriptable& obj) {
     os << obj.toFullSql();
