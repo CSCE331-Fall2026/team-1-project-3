@@ -341,6 +341,8 @@ class Generator {
         void checkInitialAvailability() noexcept;
 
     public:
+        static std::string sha256(const std::string& input);
+
         static char timeBuf[128];
 
         static void incNDaysOfTime(time_t& time, int days) noexcept;

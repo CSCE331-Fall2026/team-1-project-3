@@ -1,6 +1,6 @@
 CXX = g++
 WXX = clang++
-CXXFLAGS = -std=c++17 -Wall -Wextra -pedantic-errors -fsanitize=undefined,address -g
+CXXFLAGS = -std=c++17 -Wall -Wextra -pedantic-errors -fsanitize=undefined,address -g -lcrypto
 
 all: generator
 

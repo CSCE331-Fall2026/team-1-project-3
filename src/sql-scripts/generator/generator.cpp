@@ -7,6 +7,9 @@
 #include <algorithm>
 #include <ctime>
 #include <fstream>
+#include <openssl/evp.h>
+#include <sstream>
+#include <iomanip>
 #include "common.h"
 
 using namespace std;
@@ -131,7 +134,7 @@ string User::toVals() const noexcept {
     outp += ", '";
     outp += escapeSql(name);
     outp += "', '";
-    outp += escapeSql(password);
+    outp += escapeSql(Generator::sha256(password));
     outp += "', '";
     outp += to_string(perm);
     outp += '\'';
@@ -289,6 +292,46 @@ string Timetable::toVals() const noexcept {
 }
 
 // MISC FUNCTIONS
+
+// AI Generated function for hashing the passwords (from google's ai)
+std::string Generator::sha256(const std::string& input) {
+    // 1. Create and initialize the digest context
+    EVP_MD_CTX* context = EVP_MD_CTX_new();
+    if (!context) {
+        throw std::runtime_error("Failed to create EVP_MD_CTX");
+    }
+
+    // 2. Initialize the SHA-256 digest operation
+    if (EVP_DigestInit_ex(context, EVP_sha256(), nullptr) != 1) {
+        EVP_MD_CTX_free(context);
+        throw std::runtime_error("EVP_DigestInit_ex failed");
+    }
+
+    // 3. Feed the data into the context (can be called multiple times for chunks/files)
+    if (EVP_DigestUpdate(context, input.data(), input.size()) != 1) {
+        EVP_MD_CTX_free(context);
+        throw std::runtime_error("EVP_DigestUpdate failed");
+    }
+
+    // 4. Finalize the hash and retrieve the digest
+    unsigned char hash[EVP_MAX_MD_SIZE];
+    unsigned int lengthOfHash = 0;
+    if (EVP_DigestFinal_ex(context, hash, &lengthOfHash) != 1) {
+        EVP_MD_CTX_free(context);
+        throw std::runtime_error("EVP_DigestFinal_ex failed");
+    }
+
+    // 5. Clean up the context
+    EVP_MD_CTX_free(context);
+
+    // 6. Convert raw bytes to a hex string
+    std::stringstream ss;
+    for (unsigned int i = 0; i < lengthOfHash; ++i) {
+        ss << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(hash[i]);
+    }
+
+    return ss.str();
+}
 
 ostream& operator<<(ostream& os, const Scriptable& obj) {
     os << obj.toFullSql();
