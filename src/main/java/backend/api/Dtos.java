@@ -51,12 +51,22 @@ public final class Dtos {
     }
 
     /** status is "PENDING" or "COMPLETED"; orderId is the receipt ID. */
+    /*TODO uncomment when status is implemented
     public record KitchenOrder(int orderId, String timestamp, String status, java.util.List<Line> items) {
         public record Line(int itemId, String name, int quantity) {
         }
 
         public static KitchenOrder of(KitchenOrderRecord r) {
             return new KitchenOrder(r.receiptId(), r.timestamp(), r.status(),
+                    r.items().stream().map(l -> new Line(l.itemId(), l.name(), l.quantity())).toList());
+        }
+    }*/
+     public record KitchenOrder(int orderId, String timestamp, java.util.List<Line> items) {
+        public record Line(int itemId, String name, int quantity) {
+        }
+
+        public static KitchenOrder of(KitchenOrderRecord r) {
+            return new KitchenOrder(r.receiptId(), r.timestamp(),
                     r.items().stream().map(l -> new Line(l.itemId(), l.name(), l.quantity())).toList());
         }
     }

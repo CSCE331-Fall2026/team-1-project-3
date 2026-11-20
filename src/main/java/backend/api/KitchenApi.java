@@ -1,9 +1,8 @@
 package backend.api;
 
-import backend.api.Dtos.KitchenOrder;
-import backend.api.Dtos.Stock;
-import backend.database.CashierRepository;
-import backend.database.ManagerRepository;
+import java.util.List;
+import java.util.Map;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -11,8 +10,10 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
-import java.util.Map;
+import backend.api.Dtos.KitchenOrder;
+import backend.api.Dtos.Stock;
+import backend.database.CashierRepository;
+import backend.database.ManagerRepository;
 
 /** Inventory and the order queue for kitchen staff; kept off /api/manager so it stays open when manager login arrives. */
 @RestController

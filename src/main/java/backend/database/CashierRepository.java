@@ -47,10 +47,15 @@ public final class CashierRepository {
 
     /** Pending orders oldest first, with their items in the order they were rung up. */
     public List<KitchenOrderRecord> loadPendingOrders() throws Exception {
-        final String SQL = "SELECT r.receipt_id, r.receipt_timestamp, r.status, ri.item_id, i.name, ri.quantity "
+        /*final String SQL = "SELECT r.receipt_id, r.receipt_timestamp, r.status, ri.item_id, i.name, ri.quantity "
                 + "FROM receipt r JOIN receipt_item ri ON ri.receipt_id = r.receipt_id "
                 + "JOIN item i ON i.item_id = ri.item_id "
-                + "WHERE r.status = 'PENDING' ORDER BY r.receipt_timestamp, r.receipt_id, ri.receipt_item_id";
+                + "WHERE r.status = 'PENDING' ORDER BY r.receipt_timestamp, r.receipt_id, ri.receipt_item_id";*/
+
+        final String SQL = "SELECT r.receipt_id, r.receipt_timestamp, ri.item_id, i.name, ri.quantity "
+                + "FROM receipt r JOIN receipt_item ri ON ri.receipt_id = r.receipt_id "
+                + "JOIN item i ON i.item_id = ri.item_id "
+                + "ORDER BY r.receipt_timestamp, r.receipt_id, ri.receipt_item_id";
 
         LinkedHashMap<Integer, KitchenOrderRecord> orders = new LinkedHashMap<>();
         try (
@@ -62,8 +67,11 @@ public final class CashierRepository {
                 int receiptId = resultSet.getInt("receipt_id");
                 KitchenOrderRecord order = orders.get(receiptId);
                 if (order == null) {
+                    /*TODO uncomment when status is implemented
                     order = new KitchenOrderRecord(receiptId, resultSet.getString("receipt_timestamp"),
-                            resultSet.getString("status"), new ArrayList<>());
+                            resultSet.getString("status"), new ArrayList<>());*/
+
+                    order = new KitchenOrderRecord(receiptId, resultSet.getString("receipt_timestamp"), new ArrayList<>());
                     orders.put(receiptId, order);
                 }
                 order.items().add(new KitchenOrderRecord.Line(resultSet.getInt("item_id"),
