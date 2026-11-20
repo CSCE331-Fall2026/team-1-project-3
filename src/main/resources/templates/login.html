@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login</title>
+  <style>
+    body { margin: 0; font-family: system-ui, sans-serif; }
+    form { height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; }
+    button, .back { font: inherit; font-size: 15px; background: #fff; color: #000; padding: 5px 10px;
+                    border: 1px solid grey; border-radius: 10px; cursor: pointer; text-decoration: none; }
+    button:hover, .back:hover { border-color: #D61927; }
+  </style>
+</head>
+<body>
+  <form method="post" action="/login">
+    <input name="username" placeholder="Username" autofocus />
+    <input name="password" type="password" placeholder="Password" />
+    <input type="hidden" name="{{csrfName}}" value="{{csrfValue}}" />
+    <button type="submit">Enter</button>
+    <a class="back" href="/">Back</a>
+    {{message}}
+  </form>
+</body>
+</html>

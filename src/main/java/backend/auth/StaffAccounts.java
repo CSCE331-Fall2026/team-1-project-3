@@ -1,4 +1,4 @@
-package backend.api.auth;
+package backend.auth;
 
 import backend.database.UserRepository;
 import backend.database.UserRepository.StaffAccount;

@@ -1,4 +1,4 @@
-package backend.api.auth;
+package backend.auth;
 
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.RSAKey;

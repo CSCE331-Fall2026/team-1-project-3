@@ -1,4 +1,4 @@
-package backend.api.auth;
+package backend.auth;
 
 import java.util.List;
 import org.springframework.security.oauth2.server.authorization.OAuth2TokenType;

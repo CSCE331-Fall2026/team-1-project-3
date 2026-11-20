@@ -6,7 +6,7 @@ import {
 import { Notice } from "./ui.jsx";
 
 
-const LOCATION_ID = 1; // TODO: take from login/session instead of constants
+const LOCATION_ID = 1;
 const USER_ID = 3;
 
 

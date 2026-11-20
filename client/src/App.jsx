@@ -8,7 +8,7 @@ import { currentUser, finishLogin, logout, startLogin } from "./auth.js";
 // Which views each role can open, anyone can use customer view
 const ALLOWED_VIEWS = {
   Manager: ["manager", "cashier", "customer"],
-  Cashier: ["cashier", "customer"],
+  Cashier: ["cashier", "customer"]
 };
 
 // Replaces DatabaseApp + the two changeView() methods that swapped scenes

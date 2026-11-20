@@ -5,7 +5,7 @@ import {
 } from "./lib.js";
 import { Notice } from "./ui.jsx";
 
-const LOCATION_ID = 1; // TODO: take from login/session instead of constants
+const LOCATION_ID = 1;
 const USER_ID = 3;
 
 const COL = "flex flex-col gap-[5px] border border-[grey] p-[15px] overflow-auto min-w-0";

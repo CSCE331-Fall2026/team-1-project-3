@@ -6,7 +6,8 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 /** Starts the REST API that the React client talks to. */
-@SpringBootApplication
+// also look in backend.auth for the login/security setup
+@SpringBootApplication(scanBasePackages = {"backend.api", "backend.auth"})
 public class ApiApplication {
     public static void main(String[] args) {
         // DbSetup is otherwise read lazily per request, so a missing variable would only show up as a 500.
