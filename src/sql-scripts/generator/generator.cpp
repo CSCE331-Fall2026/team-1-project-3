@@ -224,7 +224,8 @@ string OrderObject::toVals() const noexcept {
 }
 
 string Order::toSql() const noexcept {
-    return "INSERT INTO receipt (receipt_id, location_id, user_id, receipt_timestamp)";
+    // Seeded orders are history; the column default (PENDING) would put them all in the kitchen queue.
+    return "INSERT INTO receipt (receipt_id, location_id, user_id, receipt_timestamp, status)";
 }
 string Order::toVals() const noexcept {
     string outp{"("};
@@ -241,7 +242,7 @@ string Order::toVals() const noexcept {
     std::strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", timepoint);
 
     outp += buf;
-    outp += "')";
+    outp += "', 'COMPLETED')";
 
     return outp;
 }
