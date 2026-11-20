@@ -74,7 +74,7 @@ function MenuTab({ notify, ask }) {
       fields: [
         { name: "itemId", label: "Item ID:", defaultValue: currentItemId },
         { name: "categoryId", label: <span>Category ID<br />(1 - entree,<br />2 - appetizer,<br />3 - drink):</span>, defaultValue: currentCategoryId },
-        { name: "nutrition", label: <span>Nutrition Info<br />(eg. calories<br />and allergens):</span>, defaultValue: currentNutrition },
+        { name: "nutrition", label: <span>Nutrition Info<br />(eg. calories<br />and allergens):</span>, defaultValue: currentNutrition, multiline: true },
         { name: "price", label: "Item Price:", defaultValue: currentPrice },
         { name: "unitSize", label: <span>Unit Size<br />(eg. grams per serving):</span>, defaultValue: currentUnitSize },
         { name: "name", label: "Item Name:", defaultValue: currentName },
@@ -154,7 +154,7 @@ function MenuTab({ notify, ask }) {
       fields: [
         { name: "itemId", label: "Item ID:" },
         { name: "categoryId", label: <span>Category ID<br />(1 - entree,<br />2 - appetizer,<br />3 - drink):</span> },
-        { name: "nutrition", label: <span>Nutrition Info<br />(eg. calories<br />and allergens):</span>},
+        { name: "nutrition", label: <span>Nutrition Info<br />(eg. calories<br />and allergens):</span>, multiline: true },
         { name: "price", label: "Item Price:" },
         { name: "unitSize", label: <span>Unit Size<br />(eg. grams per serving):</span> },
         { name: "name", label: "Item Name:" },

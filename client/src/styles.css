@@ -11,7 +11,7 @@
 @layer base {
   html { line-height: normal; } /* preflight sets 1.5 */
   /* preflight makes form controls inherit the page font; the old UI used the browser's control font */
-  input { all: revert; } /* native text/checkbox inputs, as before preflight */
+  input, textarea { all: revert; } /* native text/checkbox inputs, as before preflight */
   ::placeholder { color: revert; opacity: revert; }
   button {
     font: revert;
