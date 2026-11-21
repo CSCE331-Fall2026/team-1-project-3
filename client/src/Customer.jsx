@@ -4,6 +4,9 @@ import {
   singleLine, mealLine, lineTotal, describeLine, flattenCart,
 } from "./lib.js";
 import { Notice } from "./ui.jsx";
+import BowlImg from './resources/Bowl.avif';
+import PlateImg from './resources/Plate.avif';
+import BiggerPlateImg from './resources/BiggerPlate.avif';
 
 
 const LOCATION_ID = 1; // TODO: take from login/session instead of constants
@@ -195,7 +198,7 @@ export default function Customer({ onChangeView }) {
         <div key={r.itemId} className={`${MENU_TILE} relative`} onClick={() => setItemDetails(r)}>
           <button className={INFO}
           onClick={(e) => { e.stopPropagation(); setNutritionDetails(r);}}>i</button>
-          <img src="" className="h-20 w-20 object-contain"/>
+          <img src="" className="h-50 w-50 object-contain"/>
           <span>{r.name}</span>
         </div>
       ))}
@@ -219,7 +222,7 @@ export default function Customer({ onChangeView }) {
         <div key={r.itemId} className={`${isSelected(r) ? SELECTED : MENU_TILE} relative`} onClick={() => pressMenuItem(r)}>
           <button className={INFO}
           onClick={(e) => { e.stopPropagation(); setNutritionDetails(r);}}>i</button>
-          <img src="" className="h-20 w-20 object-contain"/>
+          <img src="" className="h-50 w-50 object-contain"/>
           <span>{r.name}</span>
         </div>
       ))}
@@ -296,7 +299,7 @@ export default function Customer({ onChangeView }) {
           <div className={GRID}>
           {Object.entries(MEAL_SIZES).map(([size, { label }]) => (
             <button key={size} className={MENU_TILE} onClick={() => selectSize(size)}>
-              <img src="" className="h-20 w-20 object-contain"/>
+              <img src={label === "Bowl" ? BowlImg : label === "Plate" ? PlateImg : BiggerPlateImg} className="h-50 w-50 object-contain"/>
               <span>{label}</span>
             </button>
           ))}
