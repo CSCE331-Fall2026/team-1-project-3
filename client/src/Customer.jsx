@@ -8,12 +8,15 @@ import BowlImg from './resources/Bowl.avif';
 import PlateImg from './resources/Plate.avif';
 import BiggerPlateImg from './resources/BiggerPlate.avif';
 
-
+const images = import.meta.glob("/src/resources/*", {
+  eager: true,
+  import:"default",
+});
 const LOCATION_ID = 1; // TODO: take from login/session instead of constants
 const USER_ID = 3;
 
 
-const GRID = "flex grid grid-cols-3 gap-[5px] border-t border-gray-300 p-[15px] overflow-auto min-w-0";
+const GRID = "grid grid-cols-4 gap-[5px] border-t border-gray-300 p-[15px] overflow-auto min-w-0";
 const GRID_TITLE = "p-2.5 text-[22px] text-center font-bold w-full";
 const MEAL_GRID_TITLE = "p-2.5 text-[22px] text-center font-bold w-full flex items-center justify-between";
 const COL = "flex flex-col gap-[5px] border border-gray-300 p-[15px] overflow-auto min-w-0";
@@ -54,6 +57,7 @@ export default function Customer({ onChangeView }) {
   const say = (title, header, details) => setNotice({ id: Date.now(), title, header, details });
   const locked = checkoutState !== "idle";
   const total = useMemo(() => cartLines.reduce((sum, l) => sum + lineTotal(l), 0), [cartLines]);
+  const itemDetailsImgSrc = itemDetails?.name ? images[`/src/resources/${itemDetails.name.replace(/\s+/g, "")}.avif`] : null;
 
 
   // runQuery/loadBoxes/loadBoxesFail. Aborting on unmount replaces `controllerActive`.
@@ -194,14 +198,15 @@ export default function Customer({ onChangeView }) {
     <section ref={ref} className="flex flex-col">
       <h3 className={GRID_TITLE}>{label}</h3>
       <div className={GRID}>
-        {menu.filter((r) => r.categoryId === category).map((r) => (
+        {menu.filter((r) => r.categoryId === category).map((r) => {
+        const imageSrc = images[`/src/resources/${r.name.replace(/\s+/g, "")}.avif`];
+        return(
         <div key={r.itemId} className={`${MENU_TILE} relative`} onClick={() => setItemDetails(r)}>
           <button className={INFO}
           onClick={(e) => { e.stopPropagation(); setNutritionDetails(r);}}>i</button>
-          <img src="" className="h-50 w-50 object-contain"/>
+          <img src={imageSrc} className="h-50 w-50 object-contain"/>
           <span>{r.name}</span>
-        </div>
-      ))}
+        </div>);})}
       </div>
     </section>
   );
@@ -218,14 +223,15 @@ export default function Customer({ onChangeView }) {
         )}
       </h3>
       <div className={GRID}>
-        {menu.filter((r) => r.categoryId === category).map((r) => (
-        <div key={r.itemId} className={`${isSelected(r) ? SELECTED : MENU_TILE} relative`} onClick={() => pressMenuItem(r)}>
-          <button className={INFO}
-          onClick={(e) => { e.stopPropagation(); setNutritionDetails(r);}}>i</button>
-          <img src="" className="h-50 w-50 object-contain"/>
-          <span>{r.name}</span>
-        </div>
-      ))}
+        {menu.filter((r) => r.categoryId === category).map((r) => {
+          const imageSrc = images[`/src/resources/${r.name.replace(/\s+/g, "")}.avif`];
+          return (
+          <div key={r.itemId} className={`${isSelected(r) ? SELECTED : MENU_TILE} relative`} onClick={() => pressMenuItem(r)}>
+            <button className={INFO}
+            onClick={(e) => { e.stopPropagation(); setNutritionDetails(r);}}>i</button>
+            <img src={imageSrc} className="h-50 w-50 object-contain"/>
+            <span>{r.name}</span>
+          </div>)})}
       </div>
     </section>
     );
@@ -296,7 +302,7 @@ export default function Customer({ onChangeView }) {
         ( <>
         <section ref={mealRef} className="flex flex-col">
           <h3 className={GRID_TITLE}>Meals</h3>
-          <div className={GRID}>
+          <div className={`${GRID} !grid-cols-3`}>
           {Object.entries(MEAL_SIZES).map(([size, { label }]) => (
             <button key={size} className={MENU_TILE} onClick={() => selectSize(size)}>
               <img src={label === "Bowl" ? BowlImg : label === "Plate" ? PlateImg : BiggerPlateImg} className="h-50 w-50 object-contain"/>
@@ -336,10 +342,12 @@ export default function Customer({ onChangeView }) {
         </aside>
 
       {notice && <Notice key={notice.id} notice={notice} onClose={() => setNotice(null)} />}
+
       {itemDetails && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setItemDetails(null)}>
-          <div className="rounded-[10px] text-[20px] bg-white p-6 flex flex-col gap-3 relative"> 
+          <div className="rounded-[10px] text-[20px] bg-white p-6 flex flex-col gap-3 relative items-center justify-center"> 
             <div className="border-b border-gray-300 py-3">{itemDetails.name}</div>
+            <img src={itemDetailsImgSrc} className="h-50 w-50 object-contain"/>
             <button className={BUTTON_TWO} onClick={() => {
               pressMenuItem(itemDetails); 
               setItemDetails(null);
@@ -352,6 +360,7 @@ export default function Customer({ onChangeView }) {
           </div>
         </div>
       )}
+      
       {nutritionDetails && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setNutritionDetails(null)}>
           <div className="rounded-[10px] text-[20px] bg-white p-6 flex flex-col gap-3 relative"> 
