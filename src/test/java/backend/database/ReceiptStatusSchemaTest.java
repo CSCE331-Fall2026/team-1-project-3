@@ -39,7 +39,6 @@ class ReceiptStatusSchemaTest {
 
     @Test
     void freshSchemaDefaultsToPendingAndKeepsExplicitCompleted() throws Exception {
-        run("AddReceiptStatus.sql"); // regen-data.sh's last step must stay a harmless no-op
         try (Connection c = connect(); Statement s = c.createStatement()) {
             assertEquals("'PENDING'::order_status", queryString(c, "SELECT column_default FROM information_schema.columns"
                     + " WHERE table_name = 'receipt' AND column_name = 'status'"));

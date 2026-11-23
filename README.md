@@ -79,7 +79,7 @@ export PGHOST=$DB_HOST PGPORT=$DB_PORT PGDATABASE=$DB_NAME PGUSER=$DB_USER PGPAS
 ```bash
 ./regen-data.sh
 ```
-It loads the schema (`DesignSql.sql`), builds and runs the generator (seed data in `Script.sql`), and runs `AddReceiptStatus.sql`, which sets the `receipt.status` default to `PENDING` (already the default in `DesignSql.sql`, so a no-op). Seeded receipts are history, so the generator writes them as `COMPLETED`; new checkouts get the default, `PENDING`, and show up in the kitchen queue.
+It loads the schema (`DesignSql.sql`), then builds and runs the generator and loads its seed data (`Script.sql`). `DesignSql.sql` already defaults `receipt.status` to `PENDING`, so no further status script is needed. Seeded receipts are history, so the generator writes them as `COMPLETED`; new checkouts get the default, `PENDING`, and show up in the kitchen queue.
 
 **Verify:**
 ```bash
