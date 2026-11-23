@@ -5,6 +5,8 @@
 #include <ctime>
 #include <cstring>
 #include <random>
+#include <set>
+#include <cctype>
 
 #include "security.cpp"
 
@@ -66,13 +68,14 @@ class Location : public Scriptable {
 };
 
 enum UserPerm {
-    CASHIER, MANAGER
+    CASHIER, MANAGER, KITCHEN
 };
 
 constexpr string_view to_string(UserPerm perms) {
     switch (perms) {
         case CASHIER: return "Cashier";
         case MANAGER: return "Manager";
+        case KITCHEN: return "Kitchen";
         default: return "Unknown";
     }
 }
@@ -80,12 +83,13 @@ constexpr string_view to_string(UserPerm perms) {
 class User : public Scriptable {
     private:
         int userId;
+        string username;
         string name;
         string password;
         UserPerm perm;
 
     public:
-        User(int userId, string name, string password, UserPerm perm) : userId(userId), name(name), password(password), perm(perm) {}
+        User(int userId, string username, string name, string password, UserPerm perm) : userId(userId), username(username), name(name), password(password), perm(perm) {}
 
         string toSql() const noexcept override;
         string toVals() const noexcept override;

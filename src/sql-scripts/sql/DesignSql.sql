@@ -24,7 +24,7 @@ DROP TABLE IF EXISTS location;
 -- ENUM CREATION
 DO $$
 BEGIN
-    CREATE TYPE user_perm AS ENUM ('Cashier', 'Manager');
+    CREATE TYPE user_perm AS ENUM ('Cashier', 'Manager', 'Kitchen');
     CREATE TYPE order_status AS ENUM ('PENDING', 'COMPLETED');
 EXCEPTION
     WHEN duplicate_object THEN null;
@@ -49,6 +49,7 @@ CREATE TABLE category (
 -- Named app_user to avoid PostgreSQL reserved keyword issues
 CREATE TABLE app_user (
     user_id INTEGER PRIMARY KEY,
+    username VARCHAR(64) NOT NULL UNIQUE,
     name VARCHAR(64) NOT NULL,
     password VARCHAR(255) NOT NULL,
     perms user_perm NOT NULL
