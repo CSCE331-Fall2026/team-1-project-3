@@ -17,6 +17,7 @@ DROP TABLE IF EXISTS inventory;
 DROP TABLE IF EXISTS user_timetable;
 DROP TABLE IF EXISTS app_user;
 DROP TYPE IF EXISTS user_perm;
+DROP TYPE IF EXISTS order_status;
 DROP TABLE IF EXISTS category;
 DROP TABLE IF EXISTS location;
 
@@ -24,6 +25,7 @@ DROP TABLE IF EXISTS location;
 DO $$
 BEGIN
     CREATE TYPE user_perm AS ENUM ('Cashier', 'Manager');
+    CREATE TYPE order_status AS ENUM ('PENDING', 'COMPLETED');
 EXCEPTION
     WHEN duplicate_object THEN null;
 END $$;
@@ -137,6 +139,8 @@ CREATE TABLE receipt (
     user_id INTEGER,
     receipt_timestamp TIMESTAMP NOT NULL,
     customer VARCHAR(64),
+    -- default completed for the incoming dummy orders, once they are added the receipt status sql will turn this to pending for real orders.
+    status order_status NOT NULL DEFAULT 'COMPLETED',
 
     CONSTRAINT fk_receipt_location
         FOREIGN KEY (location_id)
@@ -187,6 +191,9 @@ CREATE INDEX idx_receipt_location_id
 
 CREATE INDEX idx_receipt_user_id
     ON receipt(user_id);
+
+CREATE INDEX idx_receipt_pending
+    ON receipt(receipt_id) WHERE status = 'PENDING';
 
 CREATE INDEX idx_receipt_item_receipt_id
     ON receipt_item(receipt_id);

@@ -68,6 +68,39 @@ export GEN_KEY="..."
 cd client && npm run dev
 ```
 
+## Database Setup
+
+Scripts are in `src/sql-scripts/sql/`. Run them with `psql` (`source set-env.sh` first):
+```bash
+export PGHOST=$DB_HOST PGPORT=$DB_PORT PGDATABASE=$DB_NAME PGUSER=$DB_USER PGPASSWORD=$DB_PASSWORD
+```
+
+**New, empty database.** `DesignSql.sql` **drops every table**, so never run it on a database whose data you want to keep.
+```bash
+psql -v ON_ERROR_STOP=1 -f src/sql-scripts/sql/DesignSql.sql
+cd src/sql-scripts/generator && make && ./generate && cd ../../..   # writes sql/Script.sql (seed data)
+psql -v ON_ERROR_STOP=1 -f src/sql-scripts/sql/Script.sql
+```
+Seeded receipts are history, so they load as `COMPLETED`; only new checkouts start as `PENDING`.
+
+**Existing database created before the kitchen queue (issue #45).** Apply the upgrade once. It keeps all data, marks every existing receipt `COMPLETED` and makes new checkouts `PENDING`. It runs in one transaction; if the column already exists it stops with `column "status" of relation "receipt" already exists` and changes nothing.
+```bash
+psql -v ON_ERROR_STOP=1 -f src/sql-scripts/sql/AddReceiptStatus.sql
+```
+
+**Verify** (either path):
+```bash
+psql -c "\d receipt"   # status ... not null default 'PENDING'; chk_receipt_status; idx_receipt_pending
+psql -c "SELECT status, COUNT(*) FROM receipt GROUP BY status"
+```
+Expected counts from the second query:
+- Fresh database from `DesignSql.sql` only, with no seed data imported: no rows, because there are no receipts yet.
+- After importing the generated historical receipts (`Script.sql`): only `COMPLETED`.
+- Right after running `AddReceiptStatus.sql` on an existing populated database: only `COMPLETED`.
+- Each new checkout after that adds a `PENDING` receipt.
+
+**Then deploy.** Apply the upgrade *before* the app version with `/api/kitchen/orders` goes live (before merging if Render auto-deploys `main`), otherwise those endpoints return 500 until it runs. The previous app version keeps working on the upgraded schema. The app never changes the schema on startup.
+
 ## Deploying
 
 Render **Web Service** → connect this repo → Runtime **Docker** (builds the root `Dockerfile`). Under Environment, set `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`. Render sets `PORT` itself.
