@@ -20,7 +20,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /**
- * receipt.status on a fresh DesignSql.sql database and via AddReceiptStatus.sql on a pre-#45 one. Same disposable
+ * receipt.status on a fresh DesignSql.sql database and via AddReceiptStatus.sql on older ones. Same disposable
  * database as KitchenOrdersTest; it DROPS every table, so only localhost URLs are accepted. Each test leaves the
  * current schema in place.
  */
@@ -42,20 +42,26 @@ class ReceiptStatusSchemaTest {
     void freshSchemaDefaultsToPendingAndRejectsUnknownStatus() throws Exception {
         try (Connection c = connect(); Statement s = c.createStatement()) {
             s.execute("INSERT INTO receipt (receipt_timestamp) VALUES (CURRENT_TIMESTAMP)");
-            assertEquals("PENDING", queryString(c, "SELECT status FROM receipt"));
+            assertEquals("PENDING", queryString(c, "SELECT status FROM receipt WHERE receipt_id = 1"));
+            // The generator writes history like this; it must stay COMPLETED.
+            s.execute("INSERT INTO receipt (receipt_timestamp, status) VALUES (CURRENT_TIMESTAMP, 'COMPLETED')");
+            assertEquals("COMPLETED", queryString(c, "SELECT status FROM receipt WHERE receipt_id = 2"));
             SQLException bad = assertThrows(SQLException.class,
                     () -> s.execute("INSERT INTO receipt (receipt_timestamp, status) VALUES (CURRENT_TIMESTAMP, 'DONE')"));
-            assertEquals("23514", bad.getSQLState()); // check_violation
-            assertThrows(SQLException.class,
+            assertEquals("22P02", bad.getSQLState()); // invalid_text_representation: not an order_status label
+            SQLException nul = assertThrows(SQLException.class,
                     () -> s.execute("INSERT INTO receipt (receipt_timestamp, status) VALUES (CURRENT_TIMESTAMP, NULL)"));
-            assertEquals(1, queryInt(c, "SELECT COUNT(*) FROM pg_indexes WHERE indexname = 'idx_receipt_pending'"));
+            assertEquals("23502", nul.getSQLState()); // not_null_violation
+            assertStatusColumn(c);
         }
     }
 
     @Test
-    void migrationCompletesHistoryThenNewCheckoutsArePendingAndRerunChangesNothing() throws Exception {
+    void migrationUpgradesLegacySchemaKeepsHistoryAndRerunChangesNothing() throws Exception {
         try (Connection c = connect(); Statement s = c.createStatement()) {
-            s.execute("ALTER TABLE receipt DROP COLUMN status"); // back to the pre-#45 schema; drops its index too
+            // Back to the pre-#45 schema: no column, no enum (dropping the column drops its index too).
+            s.execute("ALTER TABLE receipt DROP COLUMN status");
+            s.execute("DROP TYPE order_status");
             seed(s);
             s.execute("INSERT INTO receipt (location_id, user_id, receipt_timestamp) VALUES"
                     + " (1, 1, '2026-01-01 10:00'), (1, 1, '2026-01-02 11:00')");
@@ -67,25 +73,60 @@ class ReceiptStatusSchemaTest {
         HikariDataSource pool = new HikariDataSource(DatabaseConnection.config(URL, USER, PASSWORD));
         DatabaseConnection.usePool(pool);
         try (Connection c = connect()) {
+            assertStatusColumn(c);
             assertEquals(2, queryInt(c, "SELECT COUNT(*) FROM receipt WHERE status = 'COMPLETED'"));
+            assertEquals("2|2026-01-01 10:00:00|2026-01-02 11:00:00|2|15.00", queryString(c, HISTORY));
             CashierRepository repository = new CashierRepository();
             assertEquals(0, repository.loadPendingOrders().size(), "history must not flood the kitchen queue");
 
             assertEquals(CheckoutOutcome.SUCCESS, checkout(repository));
             assertEquals("PENDING", queryString(c, "SELECT status FROM receipt WHERE receipt_id = 3"));
             assertEquals(1, repository.loadPendingOrders().size());
+            assertEquals(Boolean.TRUE, repository.completeOrder(3));
+            assertEquals(Boolean.FALSE, repository.completeOrder(3), "repeated completion changes nothing");
+            assertEquals("COMPLETED", queryString(c, "SELECT status FROM receipt WHERE receipt_id = 3"));
+            assertEquals(CheckoutOutcome.SUCCESS, checkout(repository));
 
-            SQLException rerun = assertThrows(SQLException.class, () -> run("AddReceiptStatus.sql"));
-            assertTrue(rerun.getMessage().contains("already exists"), rerun.getMessage());
-            assertEquals("PENDING", queryString(c, "SELECT status FROM receipt WHERE receipt_id = 3"));
-            assertEquals(2, queryInt(c, "SELECT COUNT(*) FROM receipt WHERE status = 'COMPLETED'"));
-            assertEquals("'PENDING'::character varying", queryString(c, "SELECT column_default FROM"
-                    + " information_schema.columns WHERE table_name = 'receipt' AND column_name = 'status'"));
-            assertEquals(1, queryInt(c, "SELECT COUNT(*) FROM pg_indexes WHERE indexname = 'idx_receipt_pending'"));
+            run("AddReceiptStatus.sql"); // rerun must succeed and leave every row alone
+            assertStatusColumn(c);
+            assertEquals("PENDING", queryString(c, "SELECT status FROM receipt WHERE receipt_id = 4"));
+            assertEquals(3, queryInt(c, "SELECT COUNT(*) FROM receipt WHERE status = 'COMPLETED'"));
+            assertEquals("2|2026-01-01 10:00:00|2026-01-02 11:00:00|2|15.00", queryString(c, HISTORY));
+            assertEquals(1, repository.loadPendingOrders().size());
         } finally {
             DatabaseConnection.usePool(null);
             pool.close();
         }
+    }
+
+    @Test
+    void migrationRestoresPendingDefaultOnSchemaBuiltWithCompletedDefault() throws Exception {
+        try (Connection c = connect(); Statement s = c.createStatement()) {
+            s.execute("ALTER TABLE receipt ALTER COLUMN status SET DEFAULT 'COMPLETED'"); // DesignSql.sql before this fix
+            s.execute("INSERT INTO receipt (receipt_timestamp) VALUES ('2026-01-01 10:00')");
+        }
+        run("AddReceiptStatus.sql");
+        try (Connection c = connect(); Statement s = c.createStatement()) {
+            assertStatusColumn(c);
+            assertEquals("COMPLETED", queryString(c, "SELECT status FROM receipt WHERE receipt_id = 1"));
+            s.execute("INSERT INTO receipt (receipt_timestamp) VALUES (CURRENT_TIMESTAMP)");
+            assertEquals("PENDING", queryString(c, "SELECT status FROM receipt WHERE receipt_id = 2"));
+        }
+    }
+
+    /** History receipts 1-2 and their items, flattened so one assert catches any change. */
+    private static final String HISTORY = "SELECT (SELECT COUNT(*) FROM receipt WHERE receipt_id <= 2) || '|'"
+            + " || (SELECT string_agg(receipt_timestamp::text, '|' ORDER BY receipt_id) FROM receipt WHERE receipt_id <= 2)"
+            + " || '|' || COUNT(*) || '|' || SUM(price_at_sale) FROM receipt_item WHERE receipt_id <= 2";
+
+    private static void assertStatusColumn(Connection c) throws SQLException {
+        assertEquals("order_status|NO|'PENDING'::order_status", queryString(c, "SELECT udt_name || '|' || is_nullable"
+                + " || '|' || column_default FROM information_schema.columns WHERE table_name = 'receipt'"
+                + " AND column_name = 'status'"));
+        assertEquals("PENDING,COMPLETED", queryString(c, "SELECT string_agg(enumlabel, ',' ORDER BY enumsortorder)"
+                + " FROM pg_enum WHERE enumtypid = 'order_status'::regtype"));
+        assertEquals(1, queryInt(c, "SELECT COUNT(*) FROM pg_indexes WHERE indexname = 'idx_receipt_pending'"
+                + " AND indexdef LIKE '%WHERE (status = ''PENDING''::order_status)'"));
     }
 
     private static void seed(Statement s) throws SQLException {

@@ -81,16 +81,17 @@ psql -v ON_ERROR_STOP=1 -f src/sql-scripts/sql/DesignSql.sql
 cd src/sql-scripts/generator && make && ./generate && cd ../../..   # writes sql/Script.sql (seed data)
 psql -v ON_ERROR_STOP=1 -f src/sql-scripts/sql/Script.sql
 ```
-Seeded receipts are history, so they load as `COMPLETED`; only new checkouts start as `PENDING`.
+Seeded receipts are history, so the generator writes them as `COMPLETED`; new checkouts get the column default, `PENDING`. `./regen-data.sh` runs these same steps (plus `AddReceiptStatus.sql`, a no-op here) and is just as destructive.
 
-**Existing database created before the kitchen queue (issue #45).** Apply the upgrade once. It keeps all data, marks every existing receipt `COMPLETED` and makes new checkouts `PENDING`. It runs in one transaction; if the column already exists it stops with `column "status" of relation "receipt" already exists` and changes nothing.
+**Existing database.** Apply the upgrade if the database was created before the kitchen queue (issue #45), or with an older `DesignSql.sql` whose `receipt.status` defaulted to `COMPLETED` (then every checkout skips the kitchen queue). It keeps all data and makes new checkouts default to `PENDING`. A database without `receipt.status` gets it as an `order_status` enum column, with every existing receipt `COMPLETED`. A database that already has the earlier `VARCHAR` status column keeps it and its `chk_receipt_status` CHECK constraint; only the default changes. The kitchen API works with either column type. It runs in one transaction and is safe to rerun: a second run leaves every receipt unchanged.
 ```bash
 psql -v ON_ERROR_STOP=1 -f src/sql-scripts/sql/AddReceiptStatus.sql
 ```
 
 **Verify** (either path):
 ```bash
-psql -c "\d receipt"   # status ... not null default 'PENDING'; chk_receipt_status; idx_receipt_pending
+psql -c "\d receipt"   # status | order_status | not null | 'PENDING'::order_status; index idx_receipt_pending
+                       # (earlier VARCHAR column: character varying(16), default 'PENDING', chk_receipt_status)
 psql -c "SELECT status, COUNT(*) FROM receipt GROUP BY status"
 ```
 Expected counts from the second query:
@@ -100,6 +101,12 @@ Expected counts from the second query:
 - Each new checkout after that adds a `PENDING` receipt.
 
 **Then deploy.** Apply the upgrade *before* the app version with `/api/kitchen/orders` goes live (before merging if Render auto-deploys `main`), otherwise those endpoints return 500 until it runs. The previous app version keeps working on the upgraded schema. The app never changes the schema on startup.
+
+**Database tests** (`KitchenOrdersTest`, `ReceiptStatusSchemaTest`, `DatabaseConnectionTest`) run only when `TEST_DB_URL` is set, and they **drop or wipe every table**, so point it at a throwaway local database (`localhost`/`127.0.0.1` only); otherwise they are skipped. Load the schema into it first, since some of these tests only truncate tables:
+```bash
+psql -v ON_ERROR_STOP=1 -h 127.0.0.1 -d scratch_db -f src/sql-scripts/sql/DesignSql.sql
+TEST_DB_URL=jdbc:postgresql://127.0.0.1:5432/scratch_db TEST_DB_USER=... TEST_DB_PASSWORD=... ./mvnw test
+```
 
 ## Deploying
 
