@@ -29,7 +29,7 @@ const stockColor = ({ stock, minStock }) =>
   stock < minStock ? "#FF3333" : stock <= Math.floor(minStock * 1.5) ? "#FFCC00" : "#FFFFFF";
 
 function StockTab({ notify }) {
-  const { data: items } = useApi("/manager/stock", notify);
+  const { data: items } = useApi("/kitchen/stock", notify);
 
   return (
     <ul>
