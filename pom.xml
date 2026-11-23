@@ -21,12 +21,23 @@
     <java.version>17</java.version>
   </properties>
 
+  <!-- Help manage all the necessary pieces for oauth2 authentication-->
   <dependencies>
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-web</artifactId>
     </dependency>
     
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-oauth2-authorization-server</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
+    </dependency>
+
     <!-- HikariCP finds the driver from the JDBC URL, so runtime scope is enough. -->
     <dependency>
       <groupId>org.postgresql</groupId>

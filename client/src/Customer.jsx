@@ -163,7 +163,8 @@ export default function Customer({ onChangeView }) {
     try {
       const { outcome } = await api("/checkout", {
         method: "POST",
-        body: { locationId: LOCATION_ID, userId: USER_ID, items: flattenCart(cartLines) },
+        // AI generated, fixes from Pablo's review on PR #69, kiosk orders dont send a user anymore
+        body: { locationId: LOCATION_ID, items: flattenCart(cartLines) },
       });
       if (outcome === "UNCERTAIN") return uncertain();
       if (outcome === "SUCCESS") {

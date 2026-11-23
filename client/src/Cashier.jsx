@@ -5,8 +5,7 @@ import {
 } from "./lib.js";
 import { Notice } from "./ui.jsx";
 
-const LOCATION_ID = 1; // TODO: take from login/session instead of constants
-const USER_ID = 3;
+const LOCATION_ID = 1;
 
 const COL = "flex flex-col gap-[5px] border border-[grey] p-[15px] overflow-auto min-w-0";
 const COL_TITLE = "p-2.5 text-[22px] text-center font-bold";
@@ -104,7 +103,8 @@ export default function Cashier({ onChangeView }) {
     try {
       const { outcome } = await api("/checkout", {
         method: "POST",
-        body: { locationId: LOCATION_ID, userId: USER_ID, items: flattenCart(cartLines) },
+        // AI generated, fixes from Pablo's review on PR #69, the server gets the user from the login token now
+        body: { locationId: LOCATION_ID, items: flattenCart(cartLines) },
       });
       if (outcome === "UNCERTAIN") return uncertain();
       if (outcome === "SUCCESS") {

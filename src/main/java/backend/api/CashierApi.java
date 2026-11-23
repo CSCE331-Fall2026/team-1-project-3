@@ -2,6 +2,7 @@ package backend.api;
 
 import backend.api.Dtos.CheckoutRequest;
 import backend.api.Dtos.MenuItem;
+import backend.auth.StaffToken;
 import backend.database.CashierRepository;
 import backend.database.CashierRepository.CheckoutOutcome;
 import org.springframework.http.ResponseEntity;
@@ -12,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
+import java.security.Principal;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -28,9 +30,8 @@ public class CashierApi {
     }
 
     @PostMapping("/checkout")
-    public ResponseEntity<Map<String, String>> checkout(@RequestBody CheckoutRequest request) {
-        if (request.locationId() == null || request.userId() == null
-                || request.items() == null || request.items().isEmpty())
+    public ResponseEntity<Map<String, String>> checkout(@RequestBody CheckoutRequest request, Principal principal) {
+        if (request.locationId() == null || request.items() == null || request.items().isEmpty())
             return rejected();
 
         // Same inputs the JavaFX controller's flattenCart() produced.
@@ -46,7 +47,10 @@ public class CashierApi {
             totals.put(line.itemId(), Money.fromCents(line.totalCents()));
         }
 
-        CheckoutOutcome outcome = repository.checkout(request.locationId(), request.userId(),
+        // AI generated, fixes from Pablo's review on PR #69 (checkout trusted the userId the browser sent)
+        // who rang it up comes from the login token, not the request, no token = customer kiosk (null user)
+        Integer userId = StaffToken.userId(principal);
+        CheckoutOutcome outcome = repository.checkout(request.locationId(), userId,
                 quantities, listPrices, totals);
         if (outcome == CheckoutOutcome.REJECTED) return rejected();
         return ResponseEntity.ok(Map.of("outcome", outcome.name())); // SUCCESS | FAILURE | UNCERTAIN
