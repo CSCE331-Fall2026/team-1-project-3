@@ -29,6 +29,9 @@ using namespace std;
 // How many managers each panda express has.
 #define MANAGERS_PER_LOCATION 1 // default: 1
 
+// How many kitchen staff each panda express has.
+#define KITCHEN_PER_LOCATION 1 // default: 1
+
 // How many hours a cashier works before being rotated out.
 #define EMPLOYEE_WORK_SHIFT 7 // default: 7
 
@@ -152,7 +155,7 @@ string Location::toVals() const noexcept {
 }
 
 string User::toSql() const noexcept {
-    return "INSERT INTO app_user (user_id, name, password, perms)";
+    return "INSERT INTO app_user (user_id, username, name, password, perms)";
 }
 string User::toVals() const noexcept {
     try  {
@@ -160,6 +163,8 @@ string User::toVals() const noexcept {
 
         outp += std::to_string(userId);
         outp += ", '";
+        outp += escapeSql(username);
+        outp += "', '";
         outp += escapeSql(name);
         outp += "', '";
         outp += escapeSql(crypto::encryptString(password, Generator::key));
@@ -1115,8 +1120,26 @@ void Generator::generateLocations() {
     allLocations[0] = std::make_unique<Location>(1, "Polo Garage", "College Station", "Texas");
 }
 
+// first.last in lowercase, if that's already taken the user id goes on the end so it stays unique
+static string makeUsername(const string& name, int id, std::set<string>& taken) {
+    string username;
+    for (char c : name) {
+        if (c == ' ') {
+            username += '.';
+        }
+        else if (c != '\'') {
+            username += (char)std::tolower((unsigned char)c);
+        }
+    }
+    if (!taken.insert(username).second) {
+        username += std::to_string(id);
+        taken.insert(username);
+    }
+    return username;
+}
+
 void Generator::generateUsers() {
-    const int totalEmployees = (EMPLOYEES_PER_LOCATION + MANAGERS_PER_LOCATION) * allLocations.size(); 
+    const int totalEmployees = (EMPLOYEES_PER_LOCATION + KITCHEN_PER_LOCATION + MANAGERS_PER_LOCATION) * allLocations.size(); 
     const char fnameFile[] = "firstname.txt";
     const char lnameFile[] = "lastname.txt";
     const char passwordFile[] = "passwords.txt";
@@ -1139,7 +1162,7 @@ void Generator::generateUsers() {
 
     allUsers.resize(totalEmployees + 1);
 
-    allUsers[0] = std::make_unique<User>(0, "root", "root", UserPerm::MANAGER);
+    allUsers[0] = std::make_unique<User>(0, "root", "root", "root", UserPerm::MANAGER);
 
     vector<int> fnameLines(totalEmployees);
     vector<int> lnameLines(totalEmployees);
@@ -1191,11 +1214,14 @@ void Generator::generateUsers() {
     }
     passwordStream.close();
 
+    std::set<string> takenUsernames{"root"};
     for (size_t i = 0, id = 1; i < allLocations.size(); ++i) {
         for (int j = 0; j < EMPLOYEES_PER_LOCATION; ++j, ++id)
-            allUsers[id] = std::make_unique<User>(id, names[id - 1], passwords[id - 1], UserPerm::CASHIER);
+            allUsers[id] = std::make_unique<User>(id, makeUsername(names[id - 1], id, takenUsernames), names[id - 1], passwords[id - 1], UserPerm::CASHIER);
+        for (int j = 0; j < KITCHEN_PER_LOCATION; ++j, ++id)
+            allUsers[id] = std::make_unique<User>(id, makeUsername(names[id - 1], id, takenUsernames), names[id - 1], passwords[id - 1], UserPerm::KITCHEN);
         for (int j = 0; j < MANAGERS_PER_LOCATION; ++j, ++id)
-            allUsers[id] = std::make_unique<User>(id, names[id - 1], passwords[id - 1], UserPerm::MANAGER);
+            allUsers[id] = std::make_unique<User>(id, makeUsername(names[id - 1], id, takenUsernames), names[id - 1], passwords[id - 1], UserPerm::MANAGER);
     }
 
     clockOutTime = currentDay + WORKSHIFT_SECONDS + OPENING_TIME_UNIX;
