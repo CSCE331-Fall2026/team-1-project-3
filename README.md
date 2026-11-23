@@ -33,6 +33,21 @@ A publicly hosted web application for Panda Express that allows customers to ord
 
 ## Running Locally
 
+**Script Prereqs:** To run the generation script, you will need openssl. To install, use the following:
+```bash
+sudo apt update
+sudo apt install openssl libssl-dev
+```
+For windows, instead use winget:
+```bash
+winget install ShiningLight.OpenSSL.Dev
+```
+
+Also, for the password to hash the dummy data passwords, please get the magic numbers (ex: 123 213 132 ...) and put them in set-env.sh using the following line, replacing the ... with the numbers.
+```bash
+export GEN_KEY="..."
+```
+
 **Prerequisites:** JDK 17+ and Node.js 18+. Maven is not needed; use the included `./mvnw` wrapper.
 
 1. Create `set-env.sh` in the repo root (it's gitignored, so never commit credentials):
@@ -51,6 +66,31 @@ A publicly hosted web application for Panda Express that allows customers to ord
 **Optional, for UI work:** while step 2 is running, start the React dev server in a second terminal for hot reload at http://localhost:5173 (`/api` is proxied to :3001):
 ```bash
 cd client && npm run dev
+```
+
+## Database Setup
+
+Scripts are in `src/sql-scripts/sql/`. Run them with `psql` (`source set-env.sh` first):
+```bash
+export PGHOST=$DB_HOST PGPORT=$DB_PORT PGDATABASE=$DB_NAME PGUSER=$DB_USER PGPASSWORD=$DB_PASSWORD
+```
+
+**Regenerate the database** (the normal workflow). It **drops every table** and reloads generated data, so never run it on a database whose data you want to keep. Run from the repository root:
+```bash
+./regen-data.sh
+```
+It loads the schema (`DesignSql.sql`), then builds and runs the generator and loads its seed data (`Script.sql`). `DesignSql.sql` already defaults `receipt.status` to `PENDING`, so no further status script is needed. Seeded receipts are history, so the generator writes them as `COMPLETED`; new checkouts get the default, `PENDING`, and show up in the kitchen queue.
+
+**Verify:**
+```bash
+psql -c "SELECT status, COUNT(*) FROM receipt GROUP BY status"   # only COMPLETED right after regenerating
+```
+Each new checkout then adds a `PENDING` receipt until the kitchen completes it.
+
+**Database tests** (`KitchenOrdersTest`, `ReceiptStatusSchemaTest`, `DatabaseConnectionTest`) run only when `TEST_DB_URL` is set, and they **drop or wipe every table**, so point it at a throwaway local database (`localhost`/`127.0.0.1` only); otherwise they are skipped. Load the schema into it first, since some of these tests only truncate tables:
+```bash
+psql -v ON_ERROR_STOP=1 -h 127.0.0.1 -d scratch_db -f src/sql-scripts/sql/DesignSql.sql
+TEST_DB_URL=jdbc:postgresql://127.0.0.1:5432/scratch_db TEST_DB_USER=... TEST_DB_PASSWORD=... ./mvnw test
 ```
 
 ## Deploying

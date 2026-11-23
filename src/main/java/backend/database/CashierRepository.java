@@ -6,10 +6,12 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
+import backend.models.KitchenOrderRecord;
 import backend.models.MenuRecord;
 
 /** Handles cashier menu reads and checkout transactions. */
@@ -41,6 +43,58 @@ public final class CashierRepository {
             throw e;
         }
         return menu;
+    }
+
+    /** Pending orders oldest first, with their items in the order they were rung up. */
+    public List<KitchenOrderRecord> loadPendingOrders() throws Exception {
+        final String SQL = "SELECT r.receipt_id, r.receipt_timestamp, r.status, ri.item_id, i.name, ri.quantity "
+                + "FROM receipt r JOIN receipt_item ri ON ri.receipt_id = r.receipt_id "
+                + "JOIN item i ON i.item_id = ri.item_id "
+                + "WHERE r.status = 'PENDING' ORDER BY r.receipt_timestamp, r.receipt_id, ri.receipt_item_id";
+
+        LinkedHashMap<Integer, KitchenOrderRecord> orders = new LinkedHashMap<>();
+        try (
+                Connection connection = DatabaseConnection.open();
+                PreparedStatement statement = connection.prepareStatement(SQL);
+                ResultSet resultSet = statement.executeQuery();
+            ) {
+            while (resultSet.next()) {
+                int receiptId = resultSet.getInt("receipt_id");
+                KitchenOrderRecord order = orders.get(receiptId);
+                if (order == null) {
+                    order = new KitchenOrderRecord(receiptId, resultSet.getString("receipt_timestamp"),
+                            resultSet.getString("status"), new ArrayList<>());
+
+                    orders.put(receiptId, order);
+                }
+                order.items().add(new KitchenOrderRecord.Line(resultSet.getInt("item_id"),
+                        resultSet.getString("name"), resultSet.getInt("quantity")));
+            }
+        }
+        return new ArrayList<>(orders.values());
+    }
+
+    /**
+     * Marks a pending order completed. Touches only receipt.status: inventory was already deducted at checkout.
+     * Returns true if this call completed it, false if it was already completed, null if no such order.
+     */
+    public Boolean completeOrder(int receiptId) throws Exception {
+        try (
+                Connection connection = DatabaseConnection.open();
+                // The row lock makes concurrent calls serialize; only one sees status = 'PENDING'.
+                PreparedStatement complete = connection.prepareStatement(
+                        "UPDATE receipt SET status = 'COMPLETED' WHERE receipt_id = ? AND status = 'PENDING'");
+                PreparedStatement exists = connection.prepareStatement(
+                        "SELECT 1 FROM receipt WHERE receipt_id = ?");
+            ) {
+            complete.setInt(1, receiptId);
+            if (complete.executeUpdate() == 1)
+                return true;
+            exists.setInt(1, receiptId);
+            try (ResultSet resultSet = exists.executeQuery()) {
+                return resultSet.next() ? false : null;
+            }
+        }
     }
 
     private static long toCents(BigDecimal dollars) {

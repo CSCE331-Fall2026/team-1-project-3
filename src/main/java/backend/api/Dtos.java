@@ -1,5 +1,6 @@
 package backend.api;
 
+import backend.models.KitchenOrderRecord;
 import backend.models.MenuRecord;
 import backend.models.ReceiptRecord;
 import backend.models.StockRecord;
@@ -46,6 +47,17 @@ public final class Dtos {
             // price_at_sale holds the complete line total
             return new Receipt(r.getReceiptID(), r.getItemID(), r.getItemName(), r.getQuantity(),
                     Money.toCents(r.getLineTotal()), r.getTimestamp());
+        }
+    }
+
+    /** status is "PENDING" or "COMPLETED"; orderId is the receipt ID. */
+    public record KitchenOrder(int orderId, String timestamp, String status, java.util.List<Line> items) {
+        public record Line(int itemId, String name, int quantity) {
+        }
+
+        public static KitchenOrder of(KitchenOrderRecord r) {
+            return new KitchenOrder(r.receiptId(), r.timestamp(), r.status(),
+                    r.items().stream().map(l -> new Line(l.itemId(), l.name(), l.quantity())).toList());
         }
     }
 
