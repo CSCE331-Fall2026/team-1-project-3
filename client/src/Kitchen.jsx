@@ -1,4 +1,4 @@
-import { useRef, useEffect, useMemo, useState, useCallback } from "react";
+import { useRef, useEffect, useState, useCallback } from "react";
 import { api } from "./lib.js";
 import { Notice } from "./ui.jsx";
 
@@ -6,21 +6,76 @@ const TOOLBAR = "flex gap-3 items-center px-3.5 py-2";
 const ROW = "flex gap-2.5 items-center px-2.5 py-[5px] border-b border-[#ddd]";
 const INFO = "flex-1 whitespace-pre-line font-bold text-black";
 
-const LOAD_FAILED = ["Kitchen Staff Load Failed", "The kitchen staff data could not be loaded.", "Please check the database connection and try again."];
+const LOAD_FAILED = "Please check the database connection and try again.";
+const POLL_MS = 10_000;
+const TIMEOUT_MS = 15_000; // a hung request would otherwise block every later poll
 
-// Fetch-on-mount hook (replaces runQuery + the controllerActive guard).
-function useApi(path, notify) {
-  const [data, setData] = useState(null);
+// One request at a time: a reload asked for mid-request runs once right after it, so refreshes
+// and polls never overlap and the newest request always answers last. After a failure or timeout
+// the queued reload is dropped and the next poll retries, so a slow server is not hit back to back.
+// stop() aborts and goes quiet.
+export function createLoader(load, onResult, timeoutMs = TIMEOUT_MS) {
+  let controller = null;
+  let queued = false;
+  let stopped = false;
+  const reload = () => {
+    if (stopped) return;
+    if (controller) { queued = true; return; }
+    const current = (controller = new AbortController());
+    const timer = setTimeout(() => current.abort(new DOMException("The request timed out.", "TimeoutError")), timeoutMs);
+    load(current.signal)
+      .then(
+        // api() turns an abort mid-body into a null success, so an aborted request never counts as data.
+        (data) => !stopped && (current.signal.aborted ? onResult(current.signal.reason) : onResult(null, data)),
+        (err) => {
+          queued = false;
+          if (!stopped && err.name !== "AbortError") onResult(err);
+        })
+      .finally(() => {
+        clearTimeout(timer);
+        controller = null;
+        if (queued) { queued = false; reload(); }
+      });
+  };
+  return { reload, stop() { stopped = true; controller?.abort(); } };
+}
+
+// Fetch-on-mount hook with loading/error state. `transform` runs on every successful response.
+function useApi(path, transform = (d) => d) {
+  const [state, setState] = useState({ data: null, error: null, loading: true });
+  const loader = useRef(null);
+  const transformRef = useRef(transform);
+  transformRef.current = transform;
+
+  useEffect(() => {
+    const l = createLoader((signal) => api(path, { signal }), (error, data) =>
+      setState((s) => error ? { ...s, error, loading: false } : { data: transformRef.current(data), error: null, loading: false }));
+    loader.current = l;
+    l.reload();
+    return l.stop; // tab switch / view change aborts the request in flight
+  }, [path]);
+
   const reload = useCallback(() => {
-    const controller = new AbortController();
-    api(path, { signal: controller.signal })
-      .then(setData)
-      .catch((err) => err.name !== "AbortError" && notify(...LOAD_FAILED));
-    return () => controller.abort();
-  }, [path]); // eslint-disable-line react-hooks/exhaustive-deps
-  useEffect(() => reload(), [reload]);
-  return { data, setData, reload };
-};
+    setState((s) => ({ ...s, loading: true }));
+    loader.current?.reload();
+  }, []);
+  const setData = useCallback((fn) => setState((s) => ({ ...s, data: fn(s.data) })), []);
+  return { ...state, setData, reload };
+}
+
+// Refresh button plus a one-line status; shared by both tabs.
+function LoadBar({ loading, error, hasData, reload }) {
+  return (
+    <div className="flex gap-3 items-center mb-3">
+      <button onClick={reload} disabled={loading}>{loading ? "Refreshing..." : error ? "Retry" : "Refresh"}</button>
+      {error && (
+        <span role="alert" className="text-[#b00020] font-bold">
+          {hasData ? "Could not refresh; showing the last loaded data. " : "Could not load data. "}{LOAD_FAILED}
+        </span>
+      )}
+    </div>
+  );
+}
 
 /* ------------------------------ Ingredient Stock ------------------------------ */
 //Same as manager's stock tab, but no ability to edit stock
@@ -28,65 +83,82 @@ function useApi(path, notify) {
 const stockColor = ({ stock, minStock }) =>
   stock < minStock ? "#FF3333" : stock <= Math.floor(minStock * 1.5) ? "#FFCC00" : "#FFFFFF";
 
-function StockTab({ notify }) {
-  const { data: items } = useApi("/kitchen/stock", notify);
+function StockTab() {
+  const { data: items, loading, error, reload } = useApi("/kitchen/stock");
 
   return (
-    <ul>
-      {items?.map((i) => (
-        <li key={i.inventoryId} className={ROW} style={{ background: stockColor(i) }}>
-          <span className={INFO}>
-            {`#${i.inventoryId} ${i.name}:\n- Stock: ${i.stock}\n- Minimum Stock: ${i.minStock}\n- Next Shipment: ${i.nextShipment}\n- Shelf Life: ${i.shelfLife}`}
-          </span>
-        </li>
-      ))}
-    </ul>
+    <>
+      <LoadBar loading={loading} error={error} hasData={items !== null} reload={reload} />
+      {items === null ? (!error && <p>Loading stock...</p>) : items.length === 0 ? <p>No inventory items.</p> : (
+        <ul>
+          {items.map((i) => (
+            <li key={i.inventoryId} className={ROW} style={{ background: stockColor(i) }}>
+              <span className={INFO}>
+                {`#${i.inventoryId} ${i.name}:\n- Stock: ${i.stock}\n- Minimum Stock: ${i.minStock}\n- Next Shipment: ${i.nextShipment}\n- Shelf Life: ${i.shelfLife}`}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </>
   );
 }
 
 /* ------------------------------ Orders Tab ------------------------------ */
 function TicketsTab({ notify }) {
-    const { data: orders, setData } = useApi("/kitchen/orders", notify);
+    // Orders the backend confirmed completed. A poll that started before the confirmation could still
+    // list them as PENDING, so every response is filtered through this set.
+    const completed = useRef(new Set());
+    const { data: orders, setData, loading, error, reload } = useApi("/kitchen/orders",
+        (list) => list.filter((order) => !completed.current.has(order.orderId)));
+    const submitting = useRef(new Set()); // synchronous guard; busyIds only drives rendering
     const [busyIds, setBusyIds] = useState([]);
 
-    // POST to complete an order, then remove it from the list
+    // New checkouts show up without staff touching anything; skipped while the browser tab is hidden.
+    useEffect(() => {
+        const id = setInterval(() => !document.hidden && reload(), POLL_MS);
+        return () => clearInterval(id);
+    }, [reload]);
+
+    // POST to complete an order; remove it only once the backend confirms.
     const completeOrder = async (orderId) => {
+        if (submitting.current.has(orderId)) return;
+        submitting.current.add(orderId);
         setBusyIds((current) => [...current, orderId]);
 
         try {
-        await api(`/kitchen/orders/${orderId}/complete`, {
-            method: "POST",
-        });
-
-        setData((current) =>
-            current?.filter((order) => order.orderId !== orderId)
-        );
+            await api(`/kitchen/orders/${orderId}/complete`, { method: "POST" });
+            completed.current.add(orderId);
+            setData((current) => current?.filter((order) => order.orderId !== orderId));
         } catch (err) {
-        notify(
-            "Database Error",
-            "Unable to complete order",
-            err.message || "Please check the database connection and try again."
-        );
+            if (err.status === 404) {
+                // Don't guess: keep the ticket and ask the backend what is actually pending.
+                notify("Order Not Found", `Order #${orderId} could not be found.`, "The pending orders are being refreshed.");
+                reload();
+            } else {
+                notify("Database Error", "Unable to complete order", err.message || LOAD_FAILED);
+            }
         } finally {
-        setBusyIds((current) =>
-            current.filter((id) => id !== orderId)
-        );
+            submitting.current.delete(orderId);
+            setBusyIds((current) => current.filter((id) => id !== orderId));
         }
     };
 
     const pendingOrders = orders?.filter((order) => order.status === "PENDING");
+    const bar = <LoadBar loading={loading} error={error} hasData={orders !== null} reload={reload} />;
 
     //loading messages if no orders or loading
     if (orders === null) {
-        return <p>Loading tickets...</p>;
+        return <>{bar}{!error && <p>Loading tickets...</p>}</>;
     }
 
     if (pendingOrders.length === 0) {
-        return <p>No pending orders.</p>;
+        return <>{bar}<p>No pending orders.</p></>;
     }
 
-
     return (
+        <>
+        {bar}
         <div className="w-full overflow-x-auto pb-4">
         <div className="flex items-stretch gap-4 w-max min-w-full">
             {pendingOrders.map((order) => {
@@ -127,6 +199,7 @@ function TicketsTab({ notify }) {
 
         </div>
         </div>
+        </>
     );
 }
 
@@ -143,7 +216,7 @@ export default function Kitchen({ onChangeView }) {
 
   const tabs = [
     ["Pending Tickets", <TicketsTab notify={notify} />],
-    ["Ingredient Stock", <StockTab notify={notify} />]
+    ["Ingredient Stock", <StockTab />]
   ];
 
   return (
