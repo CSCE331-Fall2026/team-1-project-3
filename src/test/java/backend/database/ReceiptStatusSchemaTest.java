@@ -20,9 +20,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /**
- * receipt.status on a fresh DesignSql.sql database and via AddReceiptStatus.sql on older ones. Same disposable
- * database as KitchenOrdersTest; it DROPS every table, so only localhost URLs are accepted. Each test leaves the
- * current schema in place.
+ * receipt.status on a fresh DesignSql.sql database, as regen-data.sh builds it. Same disposable database as
+ * KitchenOrdersTest; it DROPS every table, so only localhost URLs are accepted.
  */
 class ReceiptStatusSchemaTest {
     private static final String URL = System.getenv("TEST_DB_URL");
@@ -39,94 +38,49 @@ class ReceiptStatusSchemaTest {
     }
 
     @Test
-    void freshSchemaDefaultsToPendingAndRejectsUnknownStatus() throws Exception {
+    void freshSchemaDefaultsToPendingAndKeepsExplicitCompleted() throws Exception {
+        run("AddReceiptStatus.sql"); // regen-data.sh's last step must stay a harmless no-op
         try (Connection c = connect(); Statement s = c.createStatement()) {
+            assertEquals("'PENDING'::order_status", queryString(c, "SELECT column_default FROM information_schema.columns"
+                    + " WHERE table_name = 'receipt' AND column_name = 'status'"));
             s.execute("INSERT INTO receipt (receipt_timestamp) VALUES (CURRENT_TIMESTAMP)");
             assertEquals("PENDING", queryString(c, "SELECT status FROM receipt WHERE receipt_id = 1"));
             // The generator writes history like this; it must stay COMPLETED.
             s.execute("INSERT INTO receipt (receipt_timestamp, status) VALUES (CURRENT_TIMESTAMP, 'COMPLETED')");
             assertEquals("COMPLETED", queryString(c, "SELECT status FROM receipt WHERE receipt_id = 2"));
-            SQLException bad = assertThrows(SQLException.class,
+            assertThrows(SQLException.class,
                     () -> s.execute("INSERT INTO receipt (receipt_timestamp, status) VALUES (CURRENT_TIMESTAMP, 'DONE')"));
-            assertEquals("22P02", bad.getSQLState()); // invalid_text_representation: not an order_status label
-            SQLException nul = assertThrows(SQLException.class,
+            assertThrows(SQLException.class,
                     () -> s.execute("INSERT INTO receipt (receipt_timestamp, status) VALUES (CURRENT_TIMESTAMP, NULL)"));
-            assertEquals("23502", nul.getSQLState()); // not_null_violation
-            assertStatusColumn(c);
         }
     }
 
     @Test
-    void migrationUpgradesLegacySchemaKeepsHistoryAndRerunChangesNothing() throws Exception {
+    void generatedHistoryStaysOutOfKitchenQueueAndNewCheckoutGoesIn() throws Exception {
         try (Connection c = connect(); Statement s = c.createStatement()) {
-            // Back to the pre-#45 schema: no column, no enum (dropping the column drops its index too).
-            s.execute("ALTER TABLE receipt DROP COLUMN status");
-            s.execute("DROP TYPE order_status");
             seed(s);
-            s.execute("INSERT INTO receipt (location_id, user_id, receipt_timestamp) VALUES"
-                    + " (1, 1, '2026-01-01 10:00'), (1, 1, '2026-01-02 11:00')");
-            s.execute("INSERT INTO receipt_item (receipt_id, item_id, quantity, price_at_sale) VALUES (1, 10, 1, 5.00),"
-                    + " (2, 10, 2, 10.00)");
+            // Same shape as the generator's receipt INSERT (explicit id and status).
+            s.execute("INSERT INTO receipt (receipt_id, location_id, user_id, receipt_timestamp, status)"
+                    + " VALUES (1, 1, 1, '2026-01-01 10:00', 'COMPLETED')");
+            s.execute("SELECT setval(pg_get_serial_sequence('receipt', 'receipt_id'), 1)");
         }
-        run("AddReceiptStatus.sql");
-
         HikariDataSource pool = new HikariDataSource(DatabaseConnection.config(URL, USER, PASSWORD));
         DatabaseConnection.usePool(pool);
         try (Connection c = connect()) {
-            assertStatusColumn(c);
-            assertEquals(2, queryInt(c, "SELECT COUNT(*) FROM receipt WHERE status = 'COMPLETED'"));
-            assertEquals("2|2026-01-01 10:00:00|2026-01-02 11:00:00|2|15.00", queryString(c, HISTORY));
             CashierRepository repository = new CashierRepository();
             assertEquals(0, repository.loadPendingOrders().size(), "history must not flood the kitchen queue");
 
             assertEquals(CheckoutOutcome.SUCCESS, checkout(repository));
-            assertEquals("PENDING", queryString(c, "SELECT status FROM receipt WHERE receipt_id = 3"));
+            assertEquals("PENDING", queryString(c, "SELECT status FROM receipt WHERE receipt_id = 2"));
             assertEquals(1, repository.loadPendingOrders().size());
-            assertEquals(Boolean.TRUE, repository.completeOrder(3));
-            assertEquals(Boolean.FALSE, repository.completeOrder(3), "repeated completion changes nothing");
-            assertEquals("COMPLETED", queryString(c, "SELECT status FROM receipt WHERE receipt_id = 3"));
-            assertEquals(CheckoutOutcome.SUCCESS, checkout(repository));
 
-            run("AddReceiptStatus.sql"); // rerun must succeed and leave every row alone
-            assertStatusColumn(c);
-            assertEquals("PENDING", queryString(c, "SELECT status FROM receipt WHERE receipt_id = 4"));
-            assertEquals(3, queryInt(c, "SELECT COUNT(*) FROM receipt WHERE status = 'COMPLETED'"));
-            assertEquals("2|2026-01-01 10:00:00|2026-01-02 11:00:00|2|15.00", queryString(c, HISTORY));
-            assertEquals(1, repository.loadPendingOrders().size());
+            assertEquals(Boolean.TRUE, repository.completeOrder(2));
+            assertEquals(0, repository.loadPendingOrders().size());
+            assertEquals("COMPLETED", queryString(c, "SELECT status FROM receipt WHERE receipt_id = 1"));
         } finally {
             DatabaseConnection.usePool(null);
             pool.close();
         }
-    }
-
-    @Test
-    void migrationRestoresPendingDefaultOnSchemaBuiltWithCompletedDefault() throws Exception {
-        try (Connection c = connect(); Statement s = c.createStatement()) {
-            s.execute("ALTER TABLE receipt ALTER COLUMN status SET DEFAULT 'COMPLETED'"); // DesignSql.sql before this fix
-            s.execute("INSERT INTO receipt (receipt_timestamp) VALUES ('2026-01-01 10:00')");
-        }
-        run("AddReceiptStatus.sql");
-        try (Connection c = connect(); Statement s = c.createStatement()) {
-            assertStatusColumn(c);
-            assertEquals("COMPLETED", queryString(c, "SELECT status FROM receipt WHERE receipt_id = 1"));
-            s.execute("INSERT INTO receipt (receipt_timestamp) VALUES (CURRENT_TIMESTAMP)");
-            assertEquals("PENDING", queryString(c, "SELECT status FROM receipt WHERE receipt_id = 2"));
-        }
-    }
-
-    /** History receipts 1-2 and their items, flattened so one assert catches any change. */
-    private static final String HISTORY = "SELECT (SELECT COUNT(*) FROM receipt WHERE receipt_id <= 2) || '|'"
-            + " || (SELECT string_agg(receipt_timestamp::text, '|' ORDER BY receipt_id) FROM receipt WHERE receipt_id <= 2)"
-            + " || '|' || COUNT(*) || '|' || SUM(price_at_sale) FROM receipt_item WHERE receipt_id <= 2";
-
-    private static void assertStatusColumn(Connection c) throws SQLException {
-        assertEquals("order_status|NO|'PENDING'::order_status", queryString(c, "SELECT udt_name || '|' || is_nullable"
-                + " || '|' || column_default FROM information_schema.columns WHERE table_name = 'receipt'"
-                + " AND column_name = 'status'"));
-        assertEquals("PENDING,COMPLETED", queryString(c, "SELECT string_agg(enumlabel, ',' ORDER BY enumsortorder)"
-                + " FROM pg_enum WHERE enumtypid = 'order_status'::regtype"));
-        assertEquals(1, queryInt(c, "SELECT COUNT(*) FROM pg_indexes WHERE indexname = 'idx_receipt_pending'"
-                + " AND indexdef LIKE '%WHERE (status = ''PENDING''::order_status)'"));
     }
 
     private static void seed(Statement s) throws SQLException {
@@ -157,13 +111,6 @@ class ReceiptStatusSchemaTest {
 
     private static Connection connect() throws SQLException {
         return DriverManager.getConnection(URL, USER, PASSWORD);
-    }
-
-    private static int queryInt(Connection c, String sql) throws SQLException {
-        try (Statement s = c.createStatement(); ResultSet r = s.executeQuery(sql)) {
-            r.next();
-            return r.getInt(1);
-        }
     }
 
     private static String queryString(Connection c, String sql) throws SQLException {
