@@ -64,6 +64,7 @@ public final class CashierRepository {
                 if (order == null) {
                     order = new KitchenOrderRecord(receiptId, resultSet.getString("receipt_timestamp"),
                             resultSet.getString("status"), new ArrayList<>());
+
                     orders.put(receiptId, order);
                 }
                 order.items().add(new KitchenOrderRecord.Line(resultSet.getInt("item_id"),
