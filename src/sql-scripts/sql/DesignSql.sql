@@ -139,8 +139,8 @@ CREATE TABLE receipt (
     user_id INTEGER,
     receipt_timestamp TIMESTAMP NOT NULL,
     customer VARCHAR(64),
-    -- default completed for the incoming dummy orders, once they are added the receipt status sql will turn this to pending for real orders.
-    status order_status NOT NULL DEFAULT 'COMPLETED',
+    -- New checkouts omit status and start PENDING; the generator writes seeded history as COMPLETED explicitly.
+    status order_status NOT NULL DEFAULT 'PENDING',
 
     CONSTRAINT fk_receipt_location
         FOREIGN KEY (location_id)
