@@ -6,6 +6,8 @@
 #include <cstring>
 #include <random>
 
+#include "security.cpp"
+
 // ENUM LENGTHS (no easy way to dynamically get this)
 #define CATEGORY_LENGTH 3
 #define USER_PERM_LENGTH 2
@@ -341,6 +343,8 @@ class Generator {
         void checkInitialAvailability() noexcept;
 
     public:
+        static std::array<unsigned char, crypto::KeySize> key;
+
         static char timeBuf[128];
 
         static void incNDaysOfTime(time_t& time, int days) noexcept;
@@ -387,6 +391,8 @@ class Generator {
         void writeOneDay(ofstream& stream, const vector<unique_ptr<Order>>& day) const;
 
         Generator(time_t startDay, const int peakDays) : current(0), currentDay(startDay) {
+
+
             this->peakDays.resize(peakDays);
 
             generateItems();

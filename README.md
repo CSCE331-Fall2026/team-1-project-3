@@ -33,6 +33,21 @@ A publicly hosted web application for Panda Express that allows customers to ord
 
 ## Running Locally
 
+**Script Prereqs:** To run the generation script, you will need openssl. To install, use the following:
+```bash
+sudo apt update
+sudo apt install openssl libssl-dev
+```
+For windows, instead use winget:
+```bash
+winget install ShiningLight.OpenSSL.Dev
+```
+
+Also, for the password to hash the dummy data passwords, please get the magic numbers (ex: 123 213 132 ...) and put them in set-env.sh using the following line, replacing the ... with the numbers.
+```bash
+export GEN_KEY="..."
+```
+
 **Prerequisites:** JDK 17+ and Node.js 18+. Maven is not needed; use the included `./mvnw` wrapper.
 
 1. Create `set-env.sh` in the repo root (it's gitignored, so never commit credentials):

@@ -17,6 +17,7 @@ const COL = "flex flex-col gap-[5px] border border-gray-300 p-[15px] overflow-au
 const BUTTON_TWO = "bg-brand px-4 py-2 text-white hover:bg-brand2 border-none";
 const MENU_TILE = "border-1 shadow-lg border-gray-200 flex flex-col items-center gap-2 rounded-[10px] hover:border-brand hover:shadow-none";
 const SELECTED = "border-2 border-brand flex flex-col items-center rounded-[10px]";
+const DISABLED = "text-gray-500 border-gray-500 bg-gray-200 flex flex-col items-center rounded-[10px]"
 const INFO = "absolute top-1 left-1 rounded-full border-gray-500 text-gray-500 !text-[10px] !min-h-0 !px-1.5 !py-0.75 hover:border-gray-900 hover:text-gray-900 hover:font-bold";
 const CLOSE = "absolute top-1 right-1 border-none text-gray-500" 
 
@@ -43,7 +44,7 @@ export default function Customer({ onChangeView }) {
   const sidesRef = useRef(null);
   const drinksRef = useRef(null);
   const cartRef = useRef(null);
-  const tabs = [["Meal", mealRef], ["Mains", mainsRef], ["Sides", sidesRef], ["Drinks", drinksRef]];
+  const tabs = [["Meals", mealRef], ["Mains", mainsRef], ["Sides", sidesRef], ["Drinks", drinksRef]];
 
 
 
@@ -216,9 +217,10 @@ export default function Customer({ onChangeView }) {
       </h3>
       <div className={GRID}>
         {menu.filter((r) => r.categoryId === category).map((r) => (
-        <div key={r.itemId} className={`${isSelected(r) ? SELECTED : MENU_TILE} relative`} onClick={() => pressMenuItem(r)}>
+        <div key={r.itemId} className={`${isSelected(r) ? (SELECTED) : pendingMains.length === MEAL_SIZES[selectedSize].mains && selectedSize != "BOWL" && r.categoryId === CATEGORY.MAIN ? (DISABLED) : (MENU_TILE)} relative`} 
+        onClick={() => pressMenuItem(r)}>
           <button className={INFO}
-          onClick={(e) => { e.stopPropagation(); setNutritionDetails(r);}}>i</button>
+          onClick={(e) => { e.stopPropagation(); setNutritionDetails(r); }}>i</button>
           <img src="" className="h-20 w-20 object-contain"/>
           <span>{r.name}</span>
         </div>
