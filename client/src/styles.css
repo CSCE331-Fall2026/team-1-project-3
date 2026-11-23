@@ -2,6 +2,7 @@
 
 @theme {
   --color-brand: #D61927; /* bg-brand, border-brand */
+  --color-brand2: #b12227;
   --font-sans: system-ui, sans-serif; /* preflight applies this to html */
 }
 
@@ -10,7 +11,7 @@
 @layer base {
   html { line-height: normal; } /* preflight sets 1.5 */
   /* preflight makes form controls inherit the page font; the old UI used the browser's control font */
-  input { all: revert; } /* native text/checkbox inputs, as before preflight */
+  input, textarea { all: revert; } /* native text/checkbox inputs, as before preflight */
   ::placeholder { color: revert; opacity: revert; }
   button {
     font: revert;

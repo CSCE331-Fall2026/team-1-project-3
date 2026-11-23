@@ -5,6 +5,7 @@ import Customer from "./Customer.jsx"
 import SignedIn from "./SignedIn.jsx";
 import { currentUser, finishLogin, logout, startLogin } from "./auth.js";
 import { api } from "./lib.js";
+import Kitchen from "./Kitchen.jsx";
 
 // Which views each role can open, anyone can use customer view
 const ALLOWED_VIEWS = {
@@ -45,9 +46,13 @@ export default function App() {
     else if (view === "cashier") {
       document.title = "Cashier View";
     }
-    else {
+    else if (view === "manager") {
       document.title = "Manager View";
     }
+    else {
+      document.title = "Kitchen View";
+    }
+    // document.title = view === "customer" ? "Customer View" : "Cashier View";
   }, [view]);
 
   // logged in, show the signed in page, otherwise show sign in page
@@ -90,7 +95,10 @@ export default function App() {
   else if (view === "cashier") {
     return (<Cashier onChangeView={openLogin} />)
   }
-  else {
+  else if (view === "manager") {
     return (<Manager onChangeView={openLogin}/>)
+  }
+  else{
+    return (<Kitchen onChangeView={openLogin}/>)
   }
 }

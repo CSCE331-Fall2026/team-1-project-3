@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import {
   Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from "recharts";
+import { DateRangePicker } from "./components/DateRangePicker/DateRangePicker";
 import { api, money, parsePrice, MAX_STOCK } from "./lib.js";
 import { FormDialog, Notice } from "./ui.jsx";
 
@@ -59,9 +60,10 @@ function MenuTab({ notify, ask }) {
       const res = await api(`/manager/menu/${currentItemId}/ingredients`, { method: "GET" });
       currentIngredientIds = res?.ingredientIds || [];
       console.log("Current ingredient IDs for item", currentItemId, ":", currentIngredientIds);
-    } catch {
-      // If no endpoint exists, skip ingredient loading
-      console.warn("Could not load current ingredients for item", currentItemId);
+    } catch (error) {
+      console.error("Error fetching current ingredient IDs:", currentItemId, error);
+      alert("Unable to load this item's ingredients. Please try again.");
+      return;
     }
 
     //Prefilling
@@ -72,9 +74,9 @@ function MenuTab({ notify, ask }) {
       fields: [
         { name: "itemId", label: "Item ID:", defaultValue: currentItemId },
         { name: "categoryId", label: <span>Category ID<br />(1 - entree,<br />2 - appetizer,<br />3 - drink):</span>, defaultValue: currentCategoryId },
-        { name: "nutrition", label: "Nutrition Info:", defaultValue: currentNutrition },
+        { name: "nutrition", label: <span>Nutrition Info<br />(eg. calories<br />and allergens):</span>, defaultValue: currentNutrition, multiline: true },
         { name: "price", label: "Item Price:", defaultValue: currentPrice },
-        { name: "unitSize", label: "Unit Size:", defaultValue: currentUnitSize },
+        { name: "unitSize", label: <span>Unit Size<br />(eg. grams per serving):</span>, defaultValue: currentUnitSize },
         { name: "name", label: "Item Name:", defaultValue: currentName },
       ],
     });
@@ -152,9 +154,9 @@ function MenuTab({ notify, ask }) {
       fields: [
         { name: "itemId", label: "Item ID:" },
         { name: "categoryId", label: <span>Category ID<br />(1 - entree,<br />2 - appetizer,<br />3 - drink):</span> },
-        { name: "nutrition", label: "Nutrition Info:" },
+        { name: "nutrition", label: <span>Nutrition Info<br />(eg. calories<br />and allergens):</span>, multiline: true },
         { name: "price", label: "Item Price:" },
-        { name: "unitSize", label: "Unit Size:" },
+        { name: "unitSize", label: <span>Unit Size<br />(eg. grams per serving):</span> },
         { name: "name", label: "Item Name:" },
       ],
     });
@@ -256,7 +258,6 @@ function MenuTab({ notify, ask }) {
         }
 
         checkbox.addEventListener('change', () => {
-          i = Number(checkbox.dataset.invId);
           if (checkbox.checked) {
             selected.add(invId);
           } else {
@@ -341,7 +342,7 @@ function StockTab({ notify, ask }) {
 
   async function changeStock(item) {
     const v = await ask({
-      title: "Change Stock", header: "Enter the change in stock (add a '-' if decreasing stock):",
+      title: "Add/Subtract Stock", header: "Enter the change in stock (add a '-' if decreasing stock):",
       fields: [{ name: "delta", label: "Change in stock:" }],
     });
     if (!v) return;
@@ -390,7 +391,7 @@ function ChartTab({ endpoint, title, rangePrefix, valueLabel, failure, notify, a
     try {
       const rows = await api(`/manager/${endpoint}${qs}`);
       setChart({
-        title: range ? `${rangePrefix} From ${range.start} to ${range.end}` : title,
+        title: range ? `${rangePrefix} From ${(range.start).slice(0, 10)} to ${(range.end).slice(0, 10)}` : title,
         rows: rows.map((r) => ({ label: r.label ?? `#${r.id}-${r.name} ${r.value}`, value: r.value })),
       });
     } catch {
@@ -399,30 +400,32 @@ function ChartTab({ endpoint, title, rangePrefix, valueLabel, failure, notify, a
   }, [endpoint]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { load(null); }, [load]);
 
-  async function changePeriod() {
-    const v = await ask({
-      title: "Change Time Period", header: "Enter the start and end time periods (inclusive):",
-      fields: [
-        { name: "start", label: "Start:", placeholder: "ex. 2026-01-31 00:00:00" },
-        { name: "end", label: "End:", placeholder: "ex. 2026-01-31 23:59:59" },
-      ],
-    });
-    if (!v) return;
-    const start = v.start.trim(), end = v.end.trim();
-    if (!start || !end) return notify("Invalid Input", "Both start and end time periods are required.", "");
+  const [dateRange, setDateRange] = useState(null);
+
+  function changePeriod(range) {
+    setDateRange(range);
+
+    //wait for both inputs
+    if (!range) return;
+
+    const start = `${range.start.toString()} 00:00:00`;
+    const end = `${range.end.toString()} 23:59:59`;
+
     load({ start, end });
   }
 
   return (
     <>
+      <div>
+        <DateRangePicker label="Change Time Period" granularity="day" onChange={changePeriod}/>
+      </div>
       <div className={TOOLBAR}>
-        <button onClick={changePeriod}>Change Time Period</button>
         <h2 className={TOOLBAR_TITLE}>{chart.title}</h2>
       </div>
       {chart.rows && (
         <div className="w-full" style={{ height: Math.max(320, chart.rows.length * 28 + 80) }}>
           <ResponsiveContainer>
-            <BarChart data={chart.rows} layout="vertical" margin={{ left: 16, right: 24, bottom: 16 }}>
+            <BarChart data={chart.rows} layout="vertical" margin={{ left: 16, right: 24, bottom: 16, top: 16 }}>
               <CartesianGrid strokeDasharray="3 3" horizontal={false} />
               <XAxis type="number" allowDecimals={false} label={{ value: valueLabel, position: "insideBottom", offset: -8 }} />
               <YAxis type="category" dataKey="label" width={260} interval={0} tick={{ fontSize: 12 }} />

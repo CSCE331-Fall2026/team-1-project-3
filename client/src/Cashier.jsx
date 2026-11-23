@@ -70,7 +70,10 @@ export default function Cashier({ onChangeView }) {
     const needed = MEAL_SIZES[selectedSize].mains;
     let mains = pendingMains;
     let side = pendingSide;
-    if (record.categoryId === CATEGORY.MAIN && mains.length < needed) mains = [...mains, record];
+    if (record.categoryId === CATEGORY.MAIN) {
+      if (mains.length < needed) mains = [...mains, record];
+      else if (needed === 1) mains = [...mains.slice(1), record]
+    }
     if (record.categoryId === CATEGORY.SIDE) side = record;
 
     if (mains.length === needed && side) {
