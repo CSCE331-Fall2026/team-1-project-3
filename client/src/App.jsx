@@ -9,8 +9,9 @@ import Kitchen from "./Kitchen.jsx";
 
 // Which views each role can open, anyone can use customer view
 const ALLOWED_VIEWS = {
-  Manager: ["manager", "cashier", "customer"],
-  Cashier: ["cashier", "customer"]
+  Manager: ["manager", "cashier", "customer", "kitchen"],
+  Cashier: ["cashier", "customer"],
+  Kitchen: ["kitchen", "customer"]
 };
 
 // Replaces DatabaseApp + the two changeView() methods that swapped scenes

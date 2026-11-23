@@ -8,7 +8,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Component;
 
-// Where the login page gets users from, username is the full name in app_user "first last"
+// Where the login page gets users from, by the username column in app_user
 @Component
 public class StaffAccounts implements UserDetailsService {
     private final UserRepository repository = new UserRepository();
@@ -18,7 +18,7 @@ public class StaffAccounts implements UserDetailsService {
     public UserDetails loadUserByUsername(String username) {
         StaffAccount account;
         try {
-            account = repository.findByName(username);
+            account = repository.findByUsername(username);
         }
         catch (Exception e) {
             throw new InternalAuthenticationServiceException("Could not reach the user database", e);

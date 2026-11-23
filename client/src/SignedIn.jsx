@@ -1,4 +1,4 @@
-const VIEW_LABELS = { customer: "Customer", cashier: "Cashier", manager: "Manager" };
+const VIEW_LABELS = { customer: "Customer", cashier: "Cashier", manager: "Manager", kitchen: "Kitchen" };
 
 // Signed in page after logging in, a button for each view the role allows/Log out/Back.
 // The username/password form is on the server (resources/templates/login.html)

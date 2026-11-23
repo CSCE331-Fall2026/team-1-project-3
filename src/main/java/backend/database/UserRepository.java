@@ -14,15 +14,11 @@ public final class UserRepository {
     public record StaffAccount(StaffUser user, String password) {
     }
 
-    
-    // Returns the account with this name, or null if there isnt one. app_user has no username column, so the
-    // full name ("First Last") is the current username. Currently stores passwords as plaintext which is unsafe.
-    // If two users have the same name the lower user_id wins, replace with username soon and hash the passwords
-    
-    public StaffAccount findByName(String name) throws Exception {
-        final String SQL = "SELECT user_id, name, password, perms::text AS perms FROM app_user WHERE name = ? ORDER BY user_id LIMIT 1";
+    // Returns the account with this username, or null if there isnt one
+    public StaffAccount findByUsername(String username) throws Exception {
+        final String SQL = "SELECT user_id, name, password, perms::text AS perms FROM app_user WHERE username = ?";
         try (Connection connection = DatabaseConnection.open(); PreparedStatement statement = connection.prepareStatement(SQL)) {
-            statement.setString(1, name);
+            statement.setString(1, username);
             try (ResultSet rs = statement.executeQuery()) {
                 if (!rs.next()) {
                     return null;
